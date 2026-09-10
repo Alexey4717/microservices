@@ -19,6 +19,14 @@ export const services = [
     host: '127.0.0.1',
   },
   {
+    name: 'mailer',
+    command: 'pnpm exec nest start mailer --watch',
+    prodCommand: 'node dist/apps/mailer/src/main.js',
+    build: 'pnpm run build:mailer:prod',
+    port: 3001,
+    host: '127.0.0.1',
+  },
+  {
     name: 'gateway',
     command: 'pnpm exec nest start gateway --watch',
     prodCommand: 'node dist/apps/gateway/src/main.js',

@@ -128,3 +128,75 @@ export function validateGatewayEnv(
 
   return config;
 }
+
+export class MailerEnvironmentVariables {
+  @IsOptional()
+  @IsString()
+  NODE_ENV?: string;
+
+  @IsOptional()
+  @IsString()
+  MAILER_HOST?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  MAILER_PORT?: number;
+
+  @IsString()
+  RABBITMQ_URL!: string;
+
+  @IsOptional()
+  @IsString()
+  NODEMAILER_USER_TRANSPORT?: string;
+
+  @IsOptional()
+  @IsString()
+  NODEMAILER_PASSWORD_TRANSPORT?: string;
+
+  @IsOptional()
+  @IsString()
+  NODEMAILER_FROM?: string;
+}
+
+function blankToUndefined(
+  config: Record<string, unknown>,
+  keys: readonly string[],
+): Record<string, unknown> {
+  const next = { ...config };
+  for (const key of keys) {
+    const value = next[key];
+    if (typeof value === 'string' && value.trim() === '') {
+      next[key] = undefined;
+    }
+  }
+  return next;
+}
+
+export function validateMailerEnv(
+  config: Record<string, unknown>,
+): Record<string, unknown> {
+  const normalized = blankToUndefined(config, [
+    'MAILER_HOST',
+    'NODEMAILER_USER_TRANSPORT',
+    'NODEMAILER_PASSWORD_TRANSPORT',
+    'NODEMAILER_FROM',
+  ]);
+  const validated = plainToInstance(MailerEnvironmentVariables, normalized, {
+    enableImplicitConversion: true,
+  });
+  const errors = validateSync(validated, {
+    skipMissingProperties: false,
+    forbidUnknownValues: false,
+  });
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Некорректный .env для mailer: ${errors
+        .map((error) => Object.values(error.constraints ?? {}).join(', '))
+        .join('; ')}`,
+    );
+  }
+
+  return normalized;
+}

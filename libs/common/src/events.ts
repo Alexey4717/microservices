@@ -3,6 +3,8 @@ export const USER_EVENTS = {
   AUTHENTICATED: 'user.authenticated',
 } as const;
 
+export const USERS_EVENTS_QUEUE = 'users.events';
+
 export type UserEventName = (typeof USER_EVENTS)[keyof typeof USER_EVENTS];
 
 export interface UserCreatedEvent {

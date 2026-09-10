@@ -4,7 +4,11 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
-import { USERS_RMQ_CLIENT, validateUsersEnv } from '@libs/common';
+import {
+  USERS_EVENTS_QUEUE,
+  USERS_RMQ_CLIENT,
+  validateUsersEnv,
+} from '@libs/common';
 
 import { AuthController } from './controllers/auth.controller';
 import { InternalTokenInterceptor } from './interceptors/internal-token.interceptor';
@@ -39,7 +43,7 @@ import { PrismaService } from './services/prisma.service';
           transport: Transport.RMQ,
           options: {
             urls: [configService.getOrThrow<string>('RABBITMQ_URL')],
-            queue: 'users.events',
+            queue: USERS_EVENTS_QUEUE,
             queueOptions: { durable: true },
           },
         }),
