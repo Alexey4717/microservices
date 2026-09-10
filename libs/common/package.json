@@ -1,0 +1,14 @@
+{
+  "name": "@libs/common",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./runtime.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "require": "./runtime.js",
+      "default": "./runtime.js"
+    }
+  }
+}

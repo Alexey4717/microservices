@@ -1,0 +1,5 @@
+export const USERS_GRPC_CLIENT = 'USERS_GRPC_CLIENT';
+export const USERS_RMQ_CLIENT = 'USERS_RMQ_CLIENT';
+
+export const INTERNAL_TOKEN_METADATA_KEY = 'x-internal-token';
+export const USER_ID_METADATA_KEY = 'user-id';

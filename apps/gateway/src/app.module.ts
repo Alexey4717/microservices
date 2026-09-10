@@ -1,0 +1,65 @@
+import { ApolloDriver, type ApolloDriverConfig } from '@nestjs/apollo';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
+import { GraphQLModule } from '@nestjs/graphql';
+import { PassportModule } from '@nestjs/passport';
+
+import { validateGatewayEnv } from '@libs/common';
+
+import { AuthController } from './controllers/auth.controller';
+import { RpcExceptionFilter } from './filters/rpc-exception.filter';
+import { UsersGrpcModule } from './grpc/users-grpc.module';
+import { AuthResolver } from './resolvers/auth.resolver';
+import { UsersResolver } from './resolvers/users.resolver';
+import { AuthService } from './services/auth.service';
+import { GithubStrategy } from './strategies/github.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env'],
+      validate: validateGatewayEnv,
+    }),
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): ApolloDriverConfig => {
+        const isProd = configService.get('NODE_ENV') === 'production';
+        return {
+          autoSchemaFile: true,
+          sortSchema: true,
+          playground: !isProd,
+          graphiql: !isProd,
+          introspection: !isProd,
+          path: '/graphql',
+          preserveHttpStatusForExecutionErrors: false,
+          includeStacktraceInErrorResponses: !isProd,
+          context: ({ req, res }: { req: unknown; res: unknown }) => ({
+            req,
+            res,
+          }),
+        };
+      },
+    }),
+    PassportModule.register({ session: false }),
+    UsersGrpcModule,
+  ],
+  controllers: [AuthController],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: RpcExceptionFilter,
+    },
+    AuthService,
+    AuthResolver,
+    UsersResolver,
+    JwtStrategy,
+    GoogleStrategy,
+    GithubStrategy,
+  ],
+})
+export class AppModule {}

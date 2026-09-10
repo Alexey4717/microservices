@@ -1,0 +1,65 @@
+# compiled output
+dist
+node_modules
+build
+.pnpm-store
+*.tsbuildinfo
+
+# tsc leak into library sources (keep dist ignored; do not ignore scripts/*.mjs)
+libs/**/*.js
+libs/**/*.d.ts
+libs/**/*.js.map
+libs/**/*.d.ts.map
+!libs/**/runtime.js
+
+# logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# env and secrets — never commit (allowed template: .env.example)
+.env
+.env.*
+!.env.example
+*.env
+.dev.env
+dev.example.env
+config.json
+config.example.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# local overrides
+*.local
+docker-compose.override.yml
+
+# prisma generated clients (migrations stay tracked)
+apps/**/prisma/generated/
+
+# tests
+coverage
+.nyc_output
+
+# caches and temp
+.cache
+.temp
+.tmp
+.turbo
+.nest
+
+# IDE
+.idea
+.vscode/*
+.cursor/*
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
