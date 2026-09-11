@@ -19,8 +19,8 @@ export type UserProjectionRecord = {
 type ProjectionWrite = {
   id: string;
   email: string;
-  name: string;
-  avatarUrl: string;
+  name?: string | null;
+  avatarUrl?: string | null;
 };
 
 @Injectable()
@@ -88,8 +88,8 @@ function fromUserEvent(event: UserPublicProfilePayload): ProjectionWrite {
   };
 }
 
-function emptyToNull(value: string): string | null {
-  const trimmed = value.trim();
+function emptyToNull(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 }
 
