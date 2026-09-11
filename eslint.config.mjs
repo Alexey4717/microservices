@@ -14,13 +14,19 @@ export default tseslint.config(
       '**/generated/**',
       'apps/**/prisma/generated/**',
       '**/prisma.config.ts',
+      'apps/web-client/**',
     ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   eslintConfigPrettier,
   {
-    files: ['apps/**/*.ts', 'libs/**/*.ts'],
+    files: [
+      'apps/gateway/**/*.ts',
+      'apps/users/**/*.ts',
+      'apps/mailer/**/*.ts',
+      'libs/**/*.ts',
+    ],
     languageOptions: {
       globals: {
         ...globals.node,

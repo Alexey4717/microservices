@@ -1,5 +1,6 @@
 packages:
   - 'libs/*'
+  - 'apps/web-client'
 
 allowBuilds:
   '@apollo/protobufjs': true
@@ -8,3 +9,5 @@ allowBuilds:
   bcrypt: true
   prisma: true
   protobufjs: true
+  sharp: false
+  unrs-resolver: false

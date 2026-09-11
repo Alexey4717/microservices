@@ -14,11 +14,12 @@
 ## Структура
 
 ```text
-apps/gateway   — публичный GraphQL + OAuth HTTP + проекция профиля
-apps/users     — gRPC-сервис пользователей (Prisma)
-apps/mailer    — consumer RabbitMQ, SMTP (nodemailer)
-libs/proto     — protobuf-контракты (`@libs/proto`)
-libs/common    — токены клиентов, события, маппинг RpcException (`@libs/common`)
+apps/gateway      — публичный GraphQL + OAuth HTTP + проекция профиля
+apps/users        — gRPC-сервис пользователей (Prisma)
+apps/mailer       — consumer RabbitMQ, SMTP (nodemailer)
+apps/web-client   — Next.js (браузерный клиент к GraphQL gateway)
+libs/proto        — protobuf-контракты (`@libs/proto`)
+libs/common       — токены клиентов, события, маппинг RpcException (`@libs/common`)
 ```
 
 ## Как запустить
@@ -55,9 +56,9 @@ pnpm run start:all
 
 Новый сервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и ещё одна команда в `concurrently` в `start:all` / `start:all:prod`.
 
-Если при старте EADDRINUSE (порты 3000 / 3001 / 50051 заняты старым Nest) — остановите предыдущий `start:all` или процессы на этих портах вручную.
+Если при старте EADDRINUSE (порты 3000 / 3001 / 4000 / 50051 заняты) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
 
-По отдельности: `pnpm run start:users`, `pnpm run start:mailer` и `pnpm run start:gateway`.
+По отдельности: `pnpm run start:users`, `pnpm run start:mailer` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит).
 
 ## Порты
 
@@ -65,6 +66,7 @@ pnpm run start:all
 | --- | --- | --- |
 | Gateway | `http://localhost:3000` | GraphQL и OAuth |
 | GraphQL Playground | `http://localhost:3000/graphql` | IDE в режиме development |
+| Web client | `http://localhost:4000` | Next.js, `pnpm run start:web` |
 | Mailer health | `http://127.0.0.1:3001/health` | `MAILER_HOST`:`MAILER_PORT` (по умолчанию localhost), внутренний HTTP |
 | Users gRPC | `127.0.0.1:50051` | Только localhost, не публиковать |
 | PostgreSQL | `localhost:5433` | БД `users` и `gateway` (порт хоста 5433, чтобы не пересечься с локальным Postgres) |
@@ -120,6 +122,8 @@ query {
 
 Для `me` нужен заголовок `Authorization: Bearer <accessToken>`. Без токена — 401.
 
+Браузерный клиент (`apps/web-client`) ходит на тот же `/graphql`. Gateway отвечает CORS с `CORS_ORIGIN` (по умолчанию `http://localhost:4000`).
+
 ## OAuth (Google / GitHub)
 
 Браузер не может завершить OAuth через GraphQL, поэтому на gateway есть HTTP:
@@ -137,7 +141,7 @@ query {
 
 ## Инварианты
 
-- Новый микросервис — только `pnpm exec nest generate app <name>`.
+- Новый микросервис — только `pnpm exec nest generate app <name>`. Фронт `apps/web-client` — Next.js, не Nest.
 - Публичный API — только GraphQL-резолверы gateway.
 - Синхронно — gRPC, асинхронно — RabbitMQ.
 - У каждого сервиса своя Prisma-БД (логическая БД в одном Postgres).
@@ -150,13 +154,16 @@ query {
 
 ## Скрипты
 
-- `pnpm run start:all` / `pnpm run start:all:dev` — весь стек в watch (concurrently)
+- `pnpm run start:all` / `pnpm run start:all:dev` — бэкенд-стек в watch (concurrently): users, mailer, gateway
 - `pnpm run start:all:prod` — prod-сборка без `.d.ts`/`.js.map`, затем весь стек из `dist/`
 - `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` — по отдельности (watch)
-- `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` — по отдельности из `dist/`
+- `pnpm run start:web` — Next.js на порту 4000 (`apps/web-client`)
+- `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:web:prod` — по отдельности из сборки
 - `pnpm run prisma:generate` — клиенты users и gateway
 - `pnpm run prisma:migrate` — миграции БД `users`
 - `pnpm run prisma:migrate:gateway` — миграции БД `gateway`
 - `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` — с sourceMap
 - `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` — без `.d.ts` и `.js.map`
-- `pnpm lint` / `pnpm run lint:fix`
+- `pnpm run build:web` — сборка Next.js
+- `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда
+- `pnpm run lint:web` — ESLint `apps/web-client`

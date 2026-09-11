@@ -1,10 +1,10 @@
 # Инструкции для агентов
 
-Монорепозиторий NestJS: публичный GraphQL на `apps/gateway`, доменные сервисы в `apps/*`, контракты в `libs/proto`, общее — в `libs/common`.
+Монорепозиторий NestJS: публичный GraphQL на `apps/gateway`, доменные сервисы в `apps/*`, контракты в `libs/proto`, общее — в `libs/common`. Фронт — Next.js в `apps/web-client` (pnpm workspace-пакет, не Nest-приложение).
 
 ## Команды
 
-Новое приложение только так:
+Новый бэкенд-микросервис только так:
 
 ```bash
 pnpm exec nest generate app <name>
@@ -16,7 +16,7 @@ pnpm exec nest generate app <name>
 pnpm exec nest generate library <name> --prefix app
 ```
 
-После генерации задайте в `libs/<name>/package.json` поле `"name": "@libs/<name>"` и зависимость `"@libs/<name>": "workspace:*"` в корневом `package.json`. Из `apps/*` импортируйте библиотеки как `@libs/common` / `@libs/proto`, не через `../../../libs`.
+После генерации задайте в `libs/<name>/package.json` поле `"name": "@libs/<name>"` и зависимость `"@libs/<name>": "workspace:*"` в корневом `package.json`. Из Nest-приложений в `apps/*` импортируйте библиотеки как `@libs/common` / `@libs/proto`, не через `../../../libs`. `apps/web-client` в libs не ходит.
 
 Резолверы GraphQL — только в проекте `gateway`. Во всех `apps/*/src` папки по типу (`controllers/`, `services/`, `interceptors/` и т.д.), не по фичам; Nest-модуль — только корневой. GraphQL-резолверы — только в `apps/gateway/src/resolvers/`.
 
@@ -30,7 +30,9 @@ pnpm run start:all
 
 Новый микросервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и строка в `concurrently` в `start:all` / `start:all:prod`. Отдельный оркестратор и `wait-on` не используются.
 
-Если порты 3000 / 3001 / 50051 заняты (EADDRINUSE) — остановите предыдущий `start:all` или процессы на этих портах вручную.
+Фронт (не Nest, не через `nest generate`, не в `nest-cli.json`): пакет `apps/web-client`, запуск из корня `pnpm run start:web` (порт **4000**; 3000-е оставлены серверам: gateway 3000, mailer 3001). В `start:all` не входит. Линт фронта: `pnpm run lint:web`. Формат: `pnpm run format:web`. Корневые `pnpm lint` / `format` / vitest `apps/web-client` не трогают. Из web-client не импортировать `@libs/*`.
+
+Если порты 3000 / 3001 / 4000 / 50051 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
 
 ## Архитектура
 
@@ -43,7 +45,7 @@ pnpm run start:all
 - Не читать и не коммитить `.env`, `dev.env`, `config.json`, `dev.example.env`, `config.example.json`. Шаблон — `.env.example`.
 - Документация для пользователя — на русском.
 - Runtime — CommonJS; относительные импорты без расширений файлов.
-- Из приложений импортировать libs как `@libs/common` / `@libs/proto`, не `../../../libs`.
+- Из Nest-приложений импортировать libs как `@libs/common` / `@libs/proto`, не `../../../libs`. `apps/web-client` в `@libs/*` не ходит.
 
 ## Проверка
 

@@ -52,6 +52,8 @@ coverage
 .tmp
 .turbo
 .nest
+.next
+out
 
 # IDE
 .idea

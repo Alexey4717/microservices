@@ -1,0 +1,4 @@
+dist
+coverage
+apps/web-client
+apps/**/prisma/generated

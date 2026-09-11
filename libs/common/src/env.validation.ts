@@ -90,6 +90,10 @@ export class GatewayEnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  CORS_ORIGIN?: string;
+
+  @IsOptional()
+  @IsString()
   OAUTH_CALLBACK_BASE_URL?: string;
 
   @IsOptional()

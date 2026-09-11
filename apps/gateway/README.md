@@ -12,7 +12,7 @@
 pnpm run start:gateway
 ```
 
-Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`. Нужны `GATEWAY_DATABASE_URL` и `RABBITMQ_URL`.
+Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`. Нужны `GATEWAY_DATABASE_URL` и `RABBITMQ_URL`. CORS: `CORS_ORIGIN` (по умолчанию `http://localhost:4000` для `apps/web-client`).
 
 ## GraphQL
 
