@@ -80,6 +80,12 @@ export class GatewayEnvironmentVariables {
   USERS_GRPC_URL!: string;
 
   @IsString()
+  GATEWAY_DATABASE_URL!: string;
+
+  @IsString()
+  RABBITMQ_URL!: string;
+
+  @IsString()
   INTERNAL_SERVICE_TOKEN!: string;
 
   @IsOptional()

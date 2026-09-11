@@ -1,0 +1,16 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/gateway-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UserProjection {
+  id        String   @id
+  email     String
+  name      String?
+  avatarUrl String?
+  updatedAt DateTime @updatedAt
+}

@@ -8,11 +8,14 @@ import { PassportModule } from '@nestjs/passport';
 import { validateGatewayEnv } from '@libs/common';
 
 import { AuthController } from './controllers/auth.controller';
+import { UserProjectionController } from './controllers/user-projection.controller';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { UsersGrpcModule } from './grpc/users-grpc.module';
 import { AuthResolver } from './resolvers/auth.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
 import { AuthService } from './services/auth.service';
+import { PrismaService } from './services/prisma.service';
+import { UserProjectionService } from './services/user-projection.service';
 import { GithubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -48,12 +51,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule.register({ session: false }),
     UsersGrpcModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UserProjectionController],
   providers: [
     {
       provide: APP_FILTER,
       useClass: RpcExceptionFilter,
     },
+    PrismaService,
+    UserProjectionService,
     AuthService,
     AuthResolver,
     UsersResolver,

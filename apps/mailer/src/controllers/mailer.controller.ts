@@ -1,11 +1,7 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 
-import {
-  USER_EVENTS,
-  type UserAuthenticatedEvent,
-  type UserCreatedEvent,
-} from '@libs/common';
+import { USER_EVENTS, type UserCreatedEvent } from '@libs/common';
 
 import { WelcomeMailService } from '../services/welcome-mail.service';
 
@@ -39,10 +35,5 @@ export class MailerController {
       );
       throw error;
     }
-  }
-
-  @EventPattern(USER_EVENTS.AUTHENTICATED)
-  handleUserAuthenticated(@Payload() _payload: UserAuthenticatedEvent): void {
-    // Общая очередь users.events: незарегистрированный паттерн роняет consumer.
   }
 }

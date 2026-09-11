@@ -1,6 +1,6 @@
 # Users
 
-Приватный gRPC-сервис. HTTP наружу не слушает. Данные — Prisma + PostgreSQL (логическая БД `users`). События — RabbitMQ. Исходники сгруппированы по типу (`controllers/`, `services/`, `interceptors/`), а не по фичам.
+Приватный gRPC-сервис. HTTP наружу не слушает. Данные — Prisma + PostgreSQL (логическая БД `users`). События — RabbitMQ (публикация в topic-exchange `users.events`, не в общую work-queue). Исходники сгруппированы по типу (`controllers/`, `services/`, `interceptors/`), а не по фичам.
 
 ## Запуск
 
@@ -21,8 +21,11 @@ gRPC: `127.0.0.1:50051` (не `0.0.0.0`). Postgres с хоста: порт **543
 
 ## События
 
-- `user.created` — после регистрации и после создания пользователя через OAuth
-- `user.authenticated` — после login и OAuth
+Публикация в exchange `users.events` (topic):
+
+- `user.created` — после регистрации и после создания пользователя через OAuth. Payload: публичный профиль (`userId`, `email`, `name`, `avatarUrl`, `occurredAt`). Mailer берёт только `email`; gateway пишет полную проекцию.
+- `user.updated` — когда пользователя не создают, а обновляют профиль (повторный OAuth / привязка аккаунта). Очередь gateway: `gateway.user-projections`, binding `user.#`.
+- `user.authenticated` — после login и OAuth (отдельные очереди на этот ключ не подписаны)
 
 ## Безопасность
 

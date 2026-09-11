@@ -5,8 +5,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
 import {
-  USERS_EVENTS_QUEUE,
   USERS_RMQ_CLIENT,
+  usersEventsPublisherOptions,
   validateUsersEnv,
 } from '@libs/common';
 
@@ -41,11 +41,9 @@ import { PrismaService } from './services/prisma.service';
         inject: [ConfigService],
         useFactory: (configService: ConfigService) => ({
           transport: Transport.RMQ,
-          options: {
-            urls: [configService.getOrThrow<string>('RABBITMQ_URL')],
-            queue: USERS_EVENTS_QUEUE,
-            queueOptions: { durable: true },
-          },
+          options: usersEventsPublisherOptions(
+            configService.getOrThrow<string>('RABBITMQ_URL'),
+          ),
         }),
       },
     ]),

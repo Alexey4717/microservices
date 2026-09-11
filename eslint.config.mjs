@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/*.d.ts',
       '**/generated/**',
       'apps/**/prisma/generated/**',
+      '**/prisma.config.ts',
     ],
   },
   eslint.configs.recommended,

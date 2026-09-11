@@ -1,12 +1,13 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
-import { Metadata } from '@grpc/grpc-js';
-import { type Observable, lastValueFrom } from 'rxjs';
+import { type CallOptions, Metadata } from '@grpc/grpc-js';
+import { type Observable, lastValueFrom, timeout } from 'rxjs';
 
 import {
   USERS_GRPC_CLIENT,
   createInternalMetadata,
+  isUsersTransportError,
   mapRpcToGraphqlError,
   mapRpcToHttpException,
 } from '@libs/common';
@@ -23,6 +24,8 @@ import type {
   UserResponse,
 } from '@libs/proto';
 
+const USERS_READ_TIMEOUT_MS = 2000;
+
 interface AuthGrpcClient {
   register(data: RegisterRequest, metadata: Metadata): Observable<AuthResponse>;
   login(data: LoginRequest, metadata: Metadata): Observable<AuthResponse>;
@@ -32,7 +35,11 @@ interface AuthGrpcClient {
   ): Observable<AuthResponse>;
   refresh(data: RefreshRequest, metadata: Metadata): Observable<AuthResponse>;
   logout(data: LogoutRequest, metadata: Metadata): Observable<Empty>;
-  getMe(data: GetMeRequest, metadata: Metadata): Observable<UserResponse>;
+  getMe(
+    data: GetMeRequest,
+    metadata: Metadata,
+    options?: CallOptions,
+  ): Observable<UserResponse>;
 }
 
 @Injectable()
@@ -82,15 +89,28 @@ export class UsersGrpcService implements OnModuleInit {
   }
 
   getMe(userId: string, internalToken: string): Promise<UserResponse> {
-    return this.callGraphql(() =>
-      this.auth.getMe({}, createInternalMetadata(internalToken, userId)),
+    const deadline = Date.now() + USERS_READ_TIMEOUT_MS;
+    return this.callGraphql(
+      () =>
+        this.auth
+          .getMe({}, createInternalMetadata(internalToken, userId), {
+            deadline,
+          })
+          .pipe(timeout({ first: USERS_READ_TIMEOUT_MS + 250 })),
+      { preserveTransportErrors: true },
     );
   }
 
-  private async callGraphql<T>(factory: () => Observable<T>): Promise<T> {
+  private async callGraphql<T>(
+    factory: () => Observable<T>,
+    options?: { preserveTransportErrors?: boolean },
+  ): Promise<T> {
     try {
       return await lastValueFrom(factory());
     } catch (error) {
+      if (options?.preserveTransportErrors && isUsersTransportError(error)) {
+        throw error;
+      }
       throw mapRpcToGraphqlError(error);
     }
   }

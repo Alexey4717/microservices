@@ -135,6 +135,49 @@ export function mapRpcToGraphqlError(error: unknown): GraphQLError {
   });
 }
 
+const TRANSPORT_STATUS_CODES = new Set<status>([
+  status.UNAVAILABLE,
+  status.DEADLINE_EXCEEDED,
+  status.CANCELLED,
+]);
+
+const TRANSPORT_MESSAGE_PATTERN =
+  /UNAVAILABLE|DEADLINE_EXCEEDED|ECONNREFUSED|ECONNRESET|ENOTFOUND|ETIMEDOUT|Failed to connect|Connection dropped|No connection established/i;
+
+export function isUsersTransportError(error: unknown): boolean {
+  if (error == null) {
+    return false;
+  }
+
+  if (
+    typeof error === 'object' &&
+    'name' in error &&
+    (error as { name?: unknown }).name === 'TimeoutError'
+  ) {
+    return true;
+  }
+
+  const parsed = parseRpcError(error);
+  if (TRANSPORT_STATUS_CODES.has(parsed.code)) {
+    return true;
+  }
+
+  const code =
+    typeof error === 'object' && 'code' in error
+      ? (error as { code?: unknown }).code
+      : undefined;
+  if (
+    code === 'ECONNREFUSED' ||
+    code === 'ECONNRESET' ||
+    code === 'ENOTFOUND' ||
+    code === 'ETIMEDOUT'
+  ) {
+    return true;
+  }
+
+  return TRANSPORT_MESSAGE_PATTERN.test(parsed.message);
+}
+
 export function isRpcLikeError(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) {
     return false;

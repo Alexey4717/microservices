@@ -14,6 +14,7 @@ import {
   USER_ID_METADATA_KEY,
   type UserAuthenticatedEvent,
   type UserCreatedEvent,
+  type UserUpdatedEvent,
   getMetadataValue,
 } from '@libs/common';
 import type {
@@ -63,7 +64,7 @@ export class AuthService {
       },
     });
 
-    this.emitCreated(user.id, user.email);
+    this.emitCreated(user);
     const tokens = await this.issueTokens(user.id, user.email);
     return { ...tokens, user: toUserResponse(user) };
   }
@@ -128,6 +129,7 @@ export class AuthService {
             emptyToUndefined(data.avatarUrl) ?? existingAccount.user.avatarUrl,
         },
       });
+      this.emitUpdated(user);
       this.emitAuthenticated(user.id, user.email, 'oauth');
       const tokens = await this.issueTokens(user.id, user.email);
       return { ...tokens, user: toUserResponse(user) };
@@ -164,7 +166,9 @@ export class AuthService {
     });
 
     if (created) {
-      this.emitCreated(user.id, user.email);
+      this.emitCreated(user);
+    } else {
+      this.emitUpdated(user);
     }
     this.emitAuthenticated(user.id, user.email, 'oauth');
     const tokens = await this.issueTokens(user.id, user.email);
@@ -265,13 +269,36 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private emitCreated(userId: string, email: string): void {
+  private emitCreated(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    avatarUrl: string | null;
+  }): void {
     const payload: UserCreatedEvent = {
-      userId,
-      email,
+      userId: user.id,
+      email: user.email,
+      name: user.name ?? '',
+      avatarUrl: user.avatarUrl ?? '',
       occurredAt: new Date().toISOString(),
     };
     this.rmqClient.emit(USER_EVENTS.CREATED, payload);
+  }
+
+  private emitUpdated(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    avatarUrl: string | null;
+  }): void {
+    const payload: UserUpdatedEvent = {
+      userId: user.id,
+      email: user.email,
+      name: user.name ?? '',
+      avatarUrl: user.avatarUrl ?? '',
+      occurredAt: new Date().toISOString(),
+    };
+    this.rmqClient.emit(USER_EVENTS.UPDATED, payload);
   }
 
   private emitAuthenticated(

@@ -1,23 +1,23 @@
 # Gateway
 
-Публичный GraphQL API (Apollo, code-first). База данных отсутствует. Пользователи ходятся в `users` по gRPC.
+Публичный GraphQL API (Apollo, code-first). Есть только read-model публичного профиля (Prisma, логическая БД `gateway`) — не source of truth. Команды аутентификации ходят в `users` по gRPC. Проекция синхронизируется write-through после успешного gRPC и событиями RabbitMQ: `user.created` пишет полный публичный профиль, `user.updated` — последующие oauth-update.
 
 Исходники в `src/` сгруппированы по типу (`resolvers/`, `controllers/`, `services/`, `guards/` и т.д.), а не по фичам. Новые GraphQL-резолверы кладите в `resolvers/`.
 
 ## Запуск
 
-Из корня репозитория (после `docker compose up` и `pnpm run start:users`):
+Из корня репозитория (после `docker compose up`, `pnpm run prisma:migrate:gateway` и `pnpm run start:users`):
 
 ```bash
 pnpm run start:gateway
 ```
 
-Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`.
+Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`. Нужны `GATEWAY_DATABASE_URL` и `RABBITMQ_URL`.
 
 ## GraphQL
 
 Мутации: `register`, `login`, `refresh`, `logout`.  
-Запрос: `me` — только с `Authorization: Bearer`, иначе 401.
+Запрос: `me` — только с `Authorization: Bearer`, иначе 401. Если `users` временно недоступен, `me` отдаёт проекцию при уже записанном профиле.
 
 ## OAuth HTTP
 

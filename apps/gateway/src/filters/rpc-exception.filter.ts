@@ -4,6 +4,7 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { type GqlExceptionFilter } from '@nestjs/graphql';
 
@@ -18,8 +19,19 @@ import {
 
 @Catch()
 export class RpcExceptionFilter implements ExceptionFilter, GqlExceptionFilter {
+  private readonly logger = new Logger(RpcExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): unknown {
     const type = host.getType<string>();
+
+    if (type === 'rpc') {
+      // RMQ noAck: false — rethrow не ack'ает и крутит poison message бесконечно.
+      this.logger.error(
+        exception instanceof Error ? exception.message : String(exception),
+        exception instanceof Error ? exception.stack : undefined,
+      );
+      return;
+    }
 
     if (type === 'http') {
       const response = host.switchToHttp().getResponse<Response>();

@@ -26,17 +26,17 @@ pnpm exec nest generate library <name> --prefix app
 pnpm run start:all
 ```
 
-Watch: `start:all` / `start:all:dev` → `node scripts/start-all.mjs dev`. После сборки: `start:all:prod` → `node scripts/start-all.mjs prod` (`build:*:prod` без `.d.ts` / `.js.map`; watch остаётся на `tsconfig.app.json` с sourceMap). Оркестратор читает список из `scripts/services.mjs`: зависимости стартуют первыми, затем wait-on TCP (таймаут 60 с), затем зависимые. Падение или таймаут одного процесса убивает остальные.
+`start:all` / `start:all:dev` запускают `users`, `mailer` и `gateway` параллельно через `concurrently` (`pnpm run start:<name>`). Падение одного процесса остальные не убивает (`--kill-others-on-fail false`). Ctrl+C останавливает всех детей. `start:all:prod` сначала собирает `build:*:prod` (без `.d.ts` / `.js.map`), затем те же процессы из `dist/`.
 
-Новый микросервис не требует npm-скриптов `wait:*` / `start:after-*`. После `pnpm exec nest generate app <name>` добавьте запись в `scripts/services.mjs` (`name`, `command` / `prodCommand`, `build` → `build:<name>:prod`, `port`, при необходимости `host` и `waitFor`).
+Новый микросервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и строка в `concurrently` в `start:all` / `start:all:prod`. Отдельный оркестратор и `wait-on` не используются.
 
-Если порты 3000 / 50051 заняты (EADDRINUSE) — остановите предыдущий `start:all` или явно: `pnpm run start:all -- --kill-ports` (либо `KILL_PORTS=1`). По умолчанию оркестратор не убивает чужие процессы.
+Если порты 3000 / 3001 / 50051 заняты (EADDRINUSE) — остановите предыдущий `start:all` или процессы на этих портах вручную.
 
 ## Архитектура
 
 - Синхронные вызовы между сервисами — gRPC.
-- Асинхронные события — RabbitMQ.
-- У каждого сервиса своя Prisma-схема и логическая БД. Gateway БД не имеет.
+- Асинхронные события — RabbitMQ (topic-exchange `users.events`, у каждого consumer своя очередь).
+- У каждого сервиса своя Prisma-схема и логическая БД. У gateway есть только read-model (проекция публичного профиля), не source of truth.
 - gRPC слушать на `127.0.0.1`, не публиковать.
 - В каждый gRPC-вызов класть `x-internal-token`. После аутентификации на gateway передавать `user-id` в metadata.
 - Не доверять user id из клиентского GraphQL-входа.

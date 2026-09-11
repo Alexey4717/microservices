@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
-import { USERS_EVENTS_QUEUE } from '@libs/common';
+import { mailerUsersEventsOptions } from '@libs/common';
 
 import { MailerModule } from './mailer.module';
 
@@ -12,11 +12,9 @@ async function bootstrap() {
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
-    options: {
-      urls: [configService.getOrThrow<string>('RABBITMQ_URL')],
-      queue: USERS_EVENTS_QUEUE,
-      queueOptions: { durable: true },
-    },
+    options: mailerUsersEventsOptions(
+      configService.getOrThrow<string>('RABBITMQ_URL'),
+    ),
   });
 
   await app.startAllMicroservices();

@@ -26,10 +26,6 @@
       "@libs/proto/*": ["libs/proto/src/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "../../libs/common/src/**/*",
-    "../../libs/proto/src/**/*"
-  ],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }

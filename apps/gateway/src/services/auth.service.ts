@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { isUsersTransportError, mapRpcToGraphqlError } from '@libs/common';
 import type {
   AuthResponse,
   LoginRequest,
@@ -10,25 +11,38 @@ import type {
 } from '@libs/proto';
 
 import type { OauthProfile } from '../types/auth.types';
+import { UserProjectionService } from './user-projection.service';
 import { UsersGrpcService } from './users-grpc.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersGrpc: UsersGrpcService,
+    private readonly userProjection: UserProjectionService,
     private readonly configService: ConfigService,
   ) {}
 
-  register(input: RegisterRequest): Promise<AuthResponse> {
-    return this.usersGrpc.register(input, this.internalToken());
+  async register(input: RegisterRequest): Promise<AuthResponse> {
+    const result = await this.usersGrpc.register(input, this.internalToken());
+    await this.writeThrough(result.user);
+    return result;
   }
 
-  login(input: LoginRequest): Promise<AuthResponse> {
-    return this.usersGrpc.login(input, this.internalToken());
+  async login(input: LoginRequest): Promise<AuthResponse> {
+    const result = await this.usersGrpc.login(input, this.internalToken());
+    await this.writeThrough(result.user);
+    return result;
   }
 
-  refresh(refreshToken: string): Promise<AuthResponse> {
-    return this.usersGrpc.refresh({ refreshToken }, this.internalToken());
+  async refresh(refreshToken: string): Promise<AuthResponse> {
+    const result = await this.usersGrpc.refresh(
+      { refreshToken },
+      this.internalToken(),
+    );
+    await this.writeThrough(result.user);
+    return result;
   }
 
   async logout(refreshToken: string): Promise<boolean> {
@@ -36,7 +50,7 @@ export class AuthService {
     return true;
   }
 
-  oauthUpsert(profile: OauthProfile): Promise<AuthResponse> {
+  async oauthUpsert(profile: OauthProfile): Promise<AuthResponse> {
     const payload: OauthUpsertRequest = {
       provider: profile.provider,
       providerAccountId: profile.providerAccountId,
@@ -44,11 +58,48 @@ export class AuthService {
       name: profile.name,
       avatarUrl: profile.avatarUrl,
     };
-    return this.usersGrpc.oauthUpsert(payload, this.internalToken());
+    const result = await this.usersGrpc.oauthUpsert(
+      payload,
+      this.internalToken(),
+    );
+    await this.writeThrough(result.user);
+    return result;
   }
 
-  me(userId: string): Promise<UserResponse> {
-    return this.usersGrpc.getMe(userId, this.internalToken());
+  async me(userId: string): Promise<UserResponse> {
+    try {
+      const profile = await this.usersGrpc.getMe(userId, this.internalToken());
+      await this.writeThrough(profile);
+      return profile;
+    } catch (error) {
+      if (!isUsersTransportError(error)) {
+        throw error;
+      }
+
+      const projected = await this.userProjection.findById(userId);
+      if (projected) {
+        this.logger.warn(`users недоступен, отдаю проекцию профиля ${userId}`);
+        return projected;
+      }
+
+      throw mapRpcToGraphqlError(error);
+    }
+  }
+
+  private async writeThrough(user: UserResponse | undefined): Promise<void> {
+    if (!user?.id || !user.email) {
+      return;
+    }
+
+    try {
+      await this.userProjection.upsertFromProfile(user);
+    } catch (error) {
+      this.logger.warn(
+        `Не удалось обновить проекцию пользователя ${user.id}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   private internalToken(): string {
