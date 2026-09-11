@@ -1,11 +1,12 @@
 import { Field, InputType } from '@nestjs/graphql';
 
-import { IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
 @InputType()
 export class LogoutInput {
-  @Field()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  refreshToken!: string;
+  refreshToken?: string;
 }

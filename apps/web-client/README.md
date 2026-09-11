@@ -2,6 +2,24 @@
 
 Браузерный клиент на Next.js. Ходит только на публичный GraphQL gateway (`http://localhost:3000/graphql`).
 
+## Сессия
+
+Refresh-токен живёт в httpOnly-cookie `refresh-token`. Её **выставляет gateway**, а Next только проксирует `Cookie` / `Set-Cookie` (в том числе ротацию после `refresh` и `clearCookie` после `logout`). Access token **не** кладётся в `localStorage` / `sessionStorage` и **не** пишется в cookie: на сервере он живёт в памяти запроса (`getSession()` / `React.cache`), на клиенте — в памяти `ApolloWrapper`.
+
+`proxy.ts` проверяет наличие cookie (редирект на `/login` или с auth-страниц) и один раз за пользовательский запрос вызывает тот же `loadSession()`, чтобы записать ротированную cookie в ответ. Prefetch и Server Actions refresh не делают — иначе два параллельных `refresh` отзывают токен и выбрасывают на логин. Layout `app/(app)/layout.tsx` берёт сессию через `getSession()` и показывает имя рядом с «Выйти».
+
+## Маршруты
+
+| Путь        | Назначение                             |
+| ----------- | -------------------------------------- |
+| `/login`    | Вход по email и паролю                 |
+| `/register` | Регистрация (имя необязательно)        |
+| `/`         | Главная (нужна cookie `refresh-token`) |
+| `/profile`  | RSC `query Me`                         |
+| `/videos`   | Заглушка                               |
+
+Без cookie запросы кроме `/login` и `/register` уходят на `/login`. С cookie эти две страницы редиректят на `/`.
+
 ## Запуск
 
 Сначала поднимите бэкенд из корня репозитория (`pnpm run start:all`), затем фронт:

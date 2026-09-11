@@ -12,12 +12,16 @@
 pnpm run start:gateway
 ```
 
-Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`. Нужны `GATEWAY_DATABASE_URL` и `RABBITMQ_URL`. CORS: `CORS_ORIGIN` (по умолчанию `http://localhost:4000` для `apps/web-client`).
+Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`. Нужны `GATEWAY_DATABASE_URL` и `RABBITMQ_URL`. CORS: `CORS_ORIGIN` (по умолчанию `http://localhost:4000` для `apps/web-client`), с `credentials: true`, чтобы браузер мог принять cookie сессии.
 
 ## GraphQL
 
 Мутации: `register`, `login`, `refresh`, `logout`.  
 Запрос: `me` — только с `Authorization: Bearer`, иначе 401. Если `users` временно недоступен, `me` отдаёт проекцию при уже записанном профиле.
+
+После успешного `register` / `login` / `refresh` gateway пишет httpOnly-cookie `refresh-token` (`Path=/`, `SameSite=Lax`, `Secure` только в production, `maxAge` из `JWT_REFRESH_TTL`). `Domain` не задаётся. `refresh` ротирует токен: старый отзывается, в Set-Cookie приходит новый. `logout` вызывает `clearCookie` для `refresh-token`.
+
+`refresh` и `logout` читают токен из cookie; поле `input.refreshToken` опционально (для Playground). Если нет ни cookie, ни input — 401. Access token по-прежнему возвращается в теле ответа; cookie — источник refresh-токена для веб-клиента.
 
 ## OAuth HTTP
 
