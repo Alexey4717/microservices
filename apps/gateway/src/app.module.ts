@@ -5,11 +5,14 @@ import { APP_FILTER } from '@nestjs/core';
 import { GraphQLModule } from '@nestjs/graphql';
 import { PassportModule } from '@nestjs/passport';
 
+import { GraphQLUpload } from 'graphql-upload-ts';
+
 import { validateGatewayEnv } from '@libs/common';
 
 import { AuthController } from './controllers/auth.controller';
 import { UserProjectionController } from './controllers/user-projection.controller';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
+import { FilesGrpcModule } from './grpc/files-grpc.module';
 import { UsersGrpcModule } from './grpc/users-grpc.module';
 import { AuthResolver } from './resolvers/auth.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
@@ -41,6 +44,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
           path: '/graphql',
           preserveHttpStatusForExecutionErrors: false,
           includeStacktraceInErrorResponses: !isProd,
+          resolvers: { Upload: GraphQLUpload },
           context: ({ req, res }: { req: unknown; res: unknown }) => ({
             req,
             res,
@@ -50,6 +54,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     PassportModule.register({ session: false }),
     UsersGrpcModule,
+    FilesGrpcModule,
   ],
   controllers: [AuthController, UserProjectionController],
   providers: [

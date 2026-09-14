@@ -21,6 +21,7 @@ import type {
   OauthUpsertRequest,
   RefreshRequest,
   RegisterRequest,
+  UpdateMeRequest,
   UserResponse,
 } from '@libs/proto';
 
@@ -40,6 +41,7 @@ interface AuthGrpcClient {
     metadata: Metadata,
     options?: CallOptions,
   ): Observable<UserResponse>;
+  updateMe(data: UpdateMeRequest, metadata: Metadata): Observable<UserResponse>;
 }
 
 @Injectable()
@@ -98,6 +100,16 @@ export class UsersGrpcService implements OnModuleInit {
           })
           .pipe(timeout({ first: USERS_READ_TIMEOUT_MS + 250 })),
       { preserveTransportErrors: true },
+    );
+  }
+
+  updateMe(
+    data: UpdateMeRequest,
+    internalToken: string,
+    userId: string,
+  ): Promise<UserResponse> {
+    return this.callGraphql(() =>
+      this.auth.updateMe(data, createInternalMetadata(internalToken, userId)),
     );
   }
 

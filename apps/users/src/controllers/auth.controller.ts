@@ -13,6 +13,7 @@ import type {
   OauthUpsertRequest,
   RefreshRequest,
   RegisterRequest,
+  UpdateMeRequest,
   UserResponse,
 } from '@libs/proto';
 
@@ -50,5 +51,10 @@ export class AuthController {
   @GrpcMethod(AUTH_SERVICE_NAME, 'GetMe')
   getMe(data: GetMeRequest, metadata: Metadata): Promise<UserResponse> {
     return this.authService.getMe(data, metadata);
+  }
+
+  @GrpcMethod(AUTH_SERVICE_NAME, 'UpdateMe')
+  updateMe(data: UpdateMeRequest, metadata: Metadata): Promise<UserResponse> {
+    return this.authService.updateMe(data, metadata);
   }
 }

@@ -1,16 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { isUsersTransportError, mapRpcToGraphqlError } from '@libs/common';
+import { GraphQLError } from 'graphql';
+
+import {
+  AVATAR_MAX_BYTES,
+  isAllowedAvatarMime,
+  isUsersTransportError,
+  mapRpcToGraphqlError,
+} from '@libs/common';
 import type {
   AuthResponse,
   LoginRequest,
   OauthUpsertRequest,
   RegisterRequest,
+  UpdateMeRequest,
   UserResponse,
 } from '@libs/proto';
 
 import type { OauthProfile } from '../types/auth.types';
+import { FilesGrpcService } from './files-grpc.service';
 import { UserProjectionService } from './user-projection.service';
 import { UsersGrpcService } from './users-grpc.service';
 
@@ -20,6 +29,7 @@ export class AuthService {
 
   constructor(
     private readonly usersGrpc: UsersGrpcService,
+    private readonly filesGrpc: FilesGrpcService,
     private readonly userProjection: UserProjectionService,
     private readonly configService: ConfigService,
   ) {}
@@ -84,6 +94,55 @@ export class AuthService {
 
       throw mapRpcToGraphqlError(error);
     }
+  }
+
+  async updateMe(
+    userId: string,
+    input: UpdateMeRequest,
+  ): Promise<UserResponse> {
+    const payload: UpdateMeRequest = {};
+    if (input.name !== undefined) {
+      payload.name = input.name;
+    }
+    if (input.avatarUrl !== undefined) {
+      payload.avatarUrl = input.avatarUrl;
+    }
+
+    const profile = await this.usersGrpc.updateMe(
+      payload,
+      this.internalToken(),
+      userId,
+    );
+    await this.writeThrough(profile);
+    return profile;
+  }
+
+  async uploadAvatar(
+    userId: string,
+    file: { filename: string; mimeType: string; buffer: Buffer },
+  ): Promise<UserResponse> {
+    if (!isAllowedAvatarMime(file.mimeType)) {
+      throw new GraphQLError('Unsupported image type', {
+        extensions: { code: 'BAD_REQUEST', http: { status: 400 } },
+      });
+    }
+    if (file.buffer.length > AVATAR_MAX_BYTES) {
+      throw new GraphQLError('File too large', {
+        extensions: { code: 'BAD_REQUEST', http: { status: 400 } },
+      });
+    }
+
+    const uploaded = await this.filesGrpc.uploadFile(
+      {
+        filename: file.filename,
+        mimeType: file.mimeType,
+        content: file.buffer,
+      },
+      this.internalToken(),
+      userId,
+    );
+
+    return this.updateMe(userId, { avatarUrl: uploaded.url });
   }
 
   private async writeThrough(user: UserResponse | undefined): Promise<void> {

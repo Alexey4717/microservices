@@ -80,6 +80,9 @@ export class GatewayEnvironmentVariables {
   USERS_GRPC_URL!: string;
 
   @IsString()
+  FILES_GRPC_URL!: string;
+
+  @IsString()
   GATEWAY_DATABASE_URL!: string;
 
   @IsString()
@@ -209,4 +212,72 @@ export function validateMailerEnv(
   }
 
   return normalized;
+}
+
+export class FilesEnvironmentVariables {
+  @IsOptional()
+  @IsString()
+  NODE_ENV?: string;
+
+  @IsString()
+  FILES_DATABASE_URL!: string;
+
+  @IsString()
+  FILES_GRPC_URL!: string;
+
+  @IsOptional()
+  @IsString()
+  FILES_HOST?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  FILES_PORT?: number;
+
+  @IsString()
+  S3_ENDPOINT!: string;
+
+  @IsString()
+  S3_PUBLIC_BASE_URL!: string;
+
+  @IsString()
+  S3_REGION!: string;
+
+  @IsString()
+  S3_BUCKET!: string;
+
+  @IsString()
+  S3_ACCESS_KEY!: string;
+
+  @IsString()
+  S3_SECRET_KEY!: string;
+
+  @IsOptional()
+  @IsString()
+  S3_FORCE_PATH_STYLE?: string;
+
+  @IsString()
+  INTERNAL_SERVICE_TOKEN!: string;
+}
+
+export function validateFilesEnv(
+  config: Record<string, unknown>,
+): Record<string, unknown> {
+  const validated = plainToInstance(FilesEnvironmentVariables, config, {
+    enableImplicitConversion: true,
+  });
+  const errors = validateSync(validated, {
+    skipMissingProperties: false,
+    forbidUnknownValues: false,
+  });
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Некорректный .env для files: ${errors
+        .map((error) => Object.values(error.constraints ?? {}).join(', '))
+        .join('; ')}`,
+    );
+  }
+
+  return config;
 }

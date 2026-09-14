@@ -9,6 +9,7 @@ service AuthService {
   rpc Refresh (RefreshRequest) returns (AuthResponse);
   rpc Logout (LogoutRequest) returns (Empty);
   rpc GetMe (GetMeRequest) returns (UserResponse);
+  rpc UpdateMe (UpdateMeRequest) returns (UserResponse);
 }
 
 message RegisterRequest {
@@ -39,6 +40,11 @@ message LogoutRequest {
 }
 
 message GetMeRequest {}
+
+message UpdateMeRequest {
+  optional string name = 1;
+  optional string avatar_url = 2;
+}
 
 message UserResponse {
   string id = 1;

@@ -15,7 +15,9 @@ gRPC: `127.0.0.1:50051` (не `0.0.0.0`). Postgres с хоста: порт **543
 
 ## Методы AuthService (`package auth`)
 
-- `Register` / `Login` / `OauthUpsert` / `Refresh` / `Logout` / `GetMe`
+- `Register` / `Login` / `OauthUpsert` / `Refresh` / `Logout` / `GetMe` / `UpdateMe`
+
+`UpdateMe` меняет `name` и/или `avatarUrl` текущего пользователя. Id только из metadata `user-id`. Пустая строка `avatarUrl` сбрасывает аватар в `null`. Нужно хотя бы одно поле. После успеха публикуется `user.updated`.
 
 `OauthUpsert` создаёт или обновляет `User` + `OAuthAccount`. Если пользователь с таким email уже есть, аккаунт привязывается к нему. `passwordHash` может быть `null` (только OAuth).
 
@@ -24,9 +26,9 @@ gRPC: `127.0.0.1:50051` (не `0.0.0.0`). Postgres с хоста: порт **543
 Публикация в exchange `users.events` (topic):
 
 - `user.created` — после регистрации и после создания пользователя через OAuth. Payload: публичный профиль (`userId`, `email`, `name`, `avatarUrl`, `occurredAt`). Mailer берёт только `email`; gateway пишет полную проекцию.
-- `user.updated` — когда пользователя не создают, а обновляют профиль (повторный OAuth / привязка аккаунта). Очередь gateway: `gateway.user-projections`, binding `user.#`.
+- `user.updated` — когда пользователя не создают, а обновляют профиль (повторный OAuth / привязка аккаунта / `UpdateMe`). Очередь gateway: `gateway.user-projections`, binding `user.#`.
 - `user.authenticated` — после login и OAuth (отдельные очереди на этот ключ не подписаны)
 
 ## Безопасность
 
-Глобальный interceptor отклоняет вызовы без `x-internal-token`. `GetMe` берёт id только из metadata `user-id`. Refresh-токены хранятся в виде SHA-256 хеша.
+Глобальный interceptor отклоняет вызовы без `x-internal-token`. `GetMe` и `UpdateMe` берут id только из metadata `user-id`. Refresh-токены хранятся в виде SHA-256 хеша.

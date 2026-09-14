@@ -3,12 +3,22 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
+import { graphqlUploadExpress } from 'graphql-upload-ts';
+
 import { gatewayUserProjectionsOptions } from '@libs/common';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  app.use(
+    graphqlUploadExpress({
+      maxFileSize: 2 * 1024 * 1024,
+      maxFiles: 1,
+      overrideSendResponse: false,
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

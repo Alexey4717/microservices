@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 
-import { status } from '@grpc/grpc-js';
-import { Metadata } from '@grpc/grpc-js';
+import { Metadata, status } from '@grpc/grpc-js';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -26,6 +25,7 @@ import type {
   OauthUpsertRequest,
   RefreshRequest,
   RegisterRequest,
+  UpdateMeRequest,
   UserResponse,
 } from '@libs/proto';
 
@@ -245,6 +245,47 @@ export class AuthService {
     return toUserResponse(user);
   }
 
+  async updateMe(
+    data: UpdateMeRequest,
+    metadata: Metadata,
+  ): Promise<UserResponse> {
+    const userId = getMetadataValue(metadata, USER_ID_METADATA_KEY);
+    if (!userId) {
+      throw new RpcException({
+        code: status.UNAUTHENTICATED,
+        message: 'Missing user-id metadata',
+      });
+    }
+
+    const hasName = hasOptionalField(data, 'name');
+    const hasAvatarUrl = hasOptionalField(data, 'avatarUrl');
+    if (!hasName && !hasAvatarUrl) {
+      throw new RpcException({
+        code: status.INVALID_ARGUMENT,
+        message: 'At least one field is required',
+      });
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new RpcException({
+        code: status.UNAUTHENTICATED,
+        message: 'User not found',
+      });
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(hasName ? { name: emptyToUndefined(data.name) ?? null } : {}),
+        ...(hasAvatarUrl ? { avatarUrl: emptyToNull(data.avatarUrl) } : {}),
+      },
+    });
+
+    this.emitUpdated(updated);
+    return toUserResponse(updated);
+  }
+
   private async issueTokens(
     userId: string,
     email: string,
@@ -341,6 +382,24 @@ function normalizeEmail(email: string | undefined): string {
 function emptyToUndefined(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function emptyToNull(value: string | undefined): string | null {
+  return emptyToUndefined(value) ?? null;
+}
+
+function hasOptionalField(
+  data: UpdateMeRequest,
+  field: 'name' | 'avatarUrl',
+): boolean {
+  const record = data as UpdateMeRequest & Record<string, unknown>;
+  const oneof = record[`_${field}`];
+  if (oneof === field) {
+    return true;
+  }
+  return (
+    oneof === undefined && Object.prototype.hasOwnProperty.call(data, field)
+  );
 }
 
 function hashToken(token: string): string {

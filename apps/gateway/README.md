@@ -16,8 +16,10 @@ pnpm run start:gateway
 
 ## GraphQL
 
-Мутации: `register`, `login`, `refresh`, `logout`.  
+Мутации: `register`, `login`, `refresh`, `logout`, `updateMe`, `uploadAvatar`.  
 Запрос: `me` — только с `Authorization: Bearer`, иначе 401. Если `users` временно недоступен, `me` отдаёт проекцию при уже записанном профиле.
+
+`updateMe(input: UpdateMeInput!)` меняет `name` и/или `avatarUrl` текущего пользователя (id из JWT). `uploadAvatar(file: Upload!)` — multipart, лимит 2MB; затем gateway ставит `avatarUrl` через `UpdateMe`. Пример curl — в корневом README. Нужны `FILES_GRPC_URL` и `USERS_GRPC_URL`.
 
 После успешного `register` / `login` / `refresh` gateway пишет httpOnly-cookie `refresh-token` (`Path=/`, `SameSite=Lax`, `Secure` только в production, `maxAge` из `JWT_REFRESH_TTL`). `Domain` не задаётся. `refresh` ротирует токен: старый отзывается, в Set-Cookie приходит новый. `logout` вызывает `clearCookie` для `refresh-token`.
 
@@ -36,9 +38,9 @@ pnpm run start:gateway
 
 ## gRPC-клиент
 
-`USERS_GRPC_URL` (по умолчанию `127.0.0.1:50051`). Каждый вызов:
+`USERS_GRPC_URL` (по умолчанию `127.0.0.1:50051`) и `FILES_GRPC_URL` (`127.0.0.1:50052`). Каждый вызов:
 
 - metadata `x-internal-token` = `INTERNAL_SERVICE_TOKEN`
-- после JWT — metadata `user-id` (не из тела запроса клиента)
+- после JWT — metadata `user-id` (не из тела запроса клиента) для `GetMe`, `UpdateMe`, `UploadFile`
 
 JWT проверяется на gateway тем же `JWT_SECRET`, что и в `users`.

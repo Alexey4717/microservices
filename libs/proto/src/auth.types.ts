@@ -40,4 +40,9 @@ export interface LogoutRequest {
 
 export type GetMeRequest = Record<string, never>;
 
+export interface UpdateMeRequest {
+  name?: string;
+  avatarUrl?: string;
+}
+
 export type Empty = Record<string, never>;

@@ -41,6 +41,9 @@
       "path": "./apps/mailer/tsconfig.app.json"
     },
     {
+      "path": "./apps/files/tsconfig.app.json"
+    },
+    {
       "path": "./libs/common/tsconfig.lib.json"
     },
     {

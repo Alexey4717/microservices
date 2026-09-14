@@ -1,3 +1,4 @@
+export * from './avatar';
 export * from './client-tokens';
 export * from './env.validation';
 export * from './events';

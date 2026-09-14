@@ -6,7 +6,9 @@
     "deleteOutDir": false,
     "builder": "tsc",
     "tsConfigPath": "apps/gateway/tsconfig.app.json",
-    "includeLibraryAssets": ["proto"]
+    "includeLibraryAssets": [
+      "proto"
+    ]
   },
   "monorepo": true,
   "root": "apps/gateway",
@@ -18,6 +20,15 @@
       "sourceRoot": "libs/common/src",
       "compilerOptions": {
         "tsConfigPath": "libs/common/tsconfig.lib.json"
+      }
+    },
+    "files": {
+      "type": "application",
+      "root": "apps/files",
+      "entryFile": "main",
+      "sourceRoot": "apps/files/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/files/tsconfig.app.json"
       }
     },
     "gateway": {
@@ -45,7 +56,9 @@
       "sourceRoot": "libs/proto/src",
       "compilerOptions": {
         "tsConfigPath": "libs/proto/tsconfig.lib.json",
-        "assets": ["**/*.proto"],
+        "assets": [
+          "**/*.proto"
+        ],
         "watchAssets": true
       }
     },

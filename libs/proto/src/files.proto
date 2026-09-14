@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package files;
+
+service FilesService {
+  rpc UploadFile (UploadFileRequest) returns (UploadFileResponse);
+}
+
+message UploadFileRequest {
+  string filename = 1;
+  string mime_type = 2;
+  bytes content = 3;
+}
+
+message UploadFileResponse {
+  string id = 1;
+  string url = 2;
+  string object_key = 3;
+  string mime_type = 4;
+  int64 size = 5;
+}

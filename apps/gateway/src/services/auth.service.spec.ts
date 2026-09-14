@@ -6,6 +6,7 @@ import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from './auth.service';
+import { FilesGrpcService } from './files-grpc.service';
 import { UserProjectionService } from './user-projection.service';
 import { UsersGrpcService } from './users-grpc.service';
 
@@ -15,6 +16,10 @@ describe('AuthService', () => {
   let authService: AuthService;
   const usersGrpc = {
     getMe: vi.fn(),
+    updateMe: vi.fn(),
+  };
+  const filesGrpc = {
+    uploadFile: vi.fn(),
   };
   const userProjection = {
     findById: vi.fn(),
@@ -28,6 +33,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: UsersGrpcService, useValue: usersGrpc },
+        { provide: FilesGrpcService, useValue: filesGrpc },
         { provide: UserProjectionService, useValue: userProjection },
         {
           provide: ConfigService,
@@ -72,6 +78,78 @@ describe('AuthService', () => {
 
       await expect(authService.me('u1')).rejects.toBe(unauthenticated);
       expect(userProjection.findById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateMe', () => {
+    it('обновляет профиль через users gRPC и пишет проекцию', async () => {
+      usersGrpc.updateMe.mockResolvedValue({
+        id: 'u1',
+        email: 'a@example.com',
+        name: 'Ann',
+        avatarUrl: '',
+      });
+
+      await expect(
+        authService.updateMe('u1', { name: 'Ann' }),
+      ).resolves.toMatchObject({
+        id: 'u1',
+        name: 'Ann',
+      });
+      expect(usersGrpc.updateMe).toHaveBeenCalledWith(
+        { name: 'Ann' },
+        INTERNAL_TOKEN,
+        'u1',
+      );
+      expect(userProjection.upsertFromProfile).toHaveBeenCalled();
+    });
+  });
+
+  describe('uploadAvatar', () => {
+    it('загружает файл через files gRPC и ставит avatarUrl', async () => {
+      const url = 'http://localhost:9000/avatars/u1/file.jpg';
+      filesGrpc.uploadFile.mockResolvedValue({ url });
+      usersGrpc.updateMe.mockResolvedValue({
+        id: 'u1',
+        email: 'a@example.com',
+        name: '',
+        avatarUrl: url,
+      });
+
+      const buffer = Buffer.from('jpeg-bytes');
+      await expect(
+        authService.uploadAvatar('u1', {
+          filename: 'a.jpg',
+          mimeType: 'image/jpeg',
+          buffer,
+        }),
+      ).resolves.toMatchObject({ avatarUrl: url });
+
+      expect(filesGrpc.uploadFile).toHaveBeenCalledWith(
+        {
+          filename: 'a.jpg',
+          mimeType: 'image/jpeg',
+          content: buffer,
+        },
+        INTERNAL_TOKEN,
+        'u1',
+      );
+      expect(usersGrpc.updateMe).toHaveBeenCalledWith(
+        { avatarUrl: url },
+        INTERNAL_TOKEN,
+        'u1',
+      );
+    });
+
+    it('отклоняет неподдерживаемый mime', async () => {
+      await expect(
+        authService.uploadAvatar('u1', {
+          filename: 'a.pdf',
+          mimeType: 'application/pdf',
+          buffer: Buffer.from('x'),
+        }),
+      ).rejects.toBeInstanceOf(GraphQLError);
+      expect(filesGrpc.uploadFile).not.toHaveBeenCalled();
     });
   });
 });

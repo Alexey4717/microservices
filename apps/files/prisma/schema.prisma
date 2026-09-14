@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/files-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model File {
+  id           String   @id @default(uuid())
+  ownerUserId  String
+  bucket       String
+  objectKey    String   @unique
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  createdAt    DateTime @default(now())
+
+  @@index([ownerUserId])
+}
