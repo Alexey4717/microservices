@@ -34,6 +34,13 @@ async function bootstrap() {
   app.enableCors({
     origin: configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:4000',
     credentials: true,
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'Apollo-Require-Preflight',
+      'Accept',
+      'Origin',
+    ],
   });
 
   app.connectMicroservice<MicroserviceOptions>({

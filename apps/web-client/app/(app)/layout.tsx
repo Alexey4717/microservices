@@ -4,6 +4,8 @@ import { type ReactNode, Suspense } from 'react';
 import { logoutAction } from '@/lib/auth/actions';
 import { getSession, sessionDisplayName } from '@/lib/auth/session';
 
+import { HeaderUser } from './header-user';
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -38,14 +40,7 @@ async function UserSessionMenu() {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      {displayName ? (
-        <span
-          className="max-w-[12rem] truncate text-sm text-zinc-600 dark:text-zinc-400"
-          title={displayName}
-        >
-          {displayName}
-        </span>
-      ) : null}
+      {displayName && session ? <HeaderUser user={session.user} /> : null}
       <LogoutButton />
     </div>
   );

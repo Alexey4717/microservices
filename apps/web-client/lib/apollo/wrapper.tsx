@@ -22,6 +22,9 @@ export function ApolloWrapper({ children, accessToken }: ApolloWrapperProps) {
       uri: getGraphqlUrl(),
       credentials: 'omit',
       fetchOptions: { cache: 'no-store' },
+      headers: {
+        'Apollo-Require-Preflight': 'true',
+      },
     });
 
     const authLink = new SetContextLink((prevContext) => {

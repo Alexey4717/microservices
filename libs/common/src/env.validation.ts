@@ -279,5 +279,5 @@ export function validateFilesEnv(
     );
   }
 
-  return config;
+  return validated as unknown as Record<string, unknown>;
 }

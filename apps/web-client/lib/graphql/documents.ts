@@ -58,3 +58,14 @@ export const ME_QUERY = gql`
     }
   }
 `;
+
+export const UPLOAD_AVATAR_MUTATION = gql`
+  mutation UploadAvatar($file: Upload!) {
+    uploadAvatar(file: $file) {
+      id
+      email
+      name
+      avatarUrl
+    }
+  }
+`;

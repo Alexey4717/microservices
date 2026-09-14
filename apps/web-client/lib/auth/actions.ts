@@ -1,7 +1,10 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+
+import type { AuthUser } from '@/lib/graphql/types';
 
 import { REFRESH_COOKIE_NAME } from './constants';
 import {
@@ -9,6 +12,7 @@ import {
   logoutAtGateway,
   registerWithPassword,
 } from './gateway-auth';
+import { patchCachedUser } from './session-store';
 import { clearRefreshCookie, persistRefreshCookie } from './set-cookie';
 
 export type AuthFormState = { error: string } | null;
@@ -58,6 +62,20 @@ export async function registerAction(
   }
 
   redirect('/');
+}
+
+export async function rememberSessionUser(user: AuthUser): Promise<void> {
+  if (!user.id || !user.email) {
+    return;
+  }
+
+  patchCachedUser({
+    id: user.id,
+    email: user.email,
+    name: user.name ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+  });
+  revalidatePath('/', 'layout');
 }
 
 export async function logoutAction(): Promise<void> {

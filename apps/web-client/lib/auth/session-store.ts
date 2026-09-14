@@ -20,6 +20,19 @@ type CacheEntry = {
 const sessionCache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<Session | null>>();
 
+export function patchCachedUser(user: AuthUser): void {
+  const now = Date.now();
+  for (const [token, entry] of sessionCache) {
+    if (entry.expiresAt <= now) {
+      sessionCache.delete(token);
+      continue;
+    }
+    if (entry.session?.user.id === user.id) {
+      entry.session = { ...entry.session, user };
+    }
+  }
+}
+
 export function peekSession(refreshToken: string): Session | null | undefined {
   const entry = sessionCache.get(refreshToken);
   if (!entry) {
