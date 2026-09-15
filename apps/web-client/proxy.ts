@@ -14,7 +14,7 @@ import {
 import { loadSession } from '@/lib/auth/session-store';
 import { encodeSessionUser } from '@/lib/auth/session-user';
 
-const AUTH_PATHS = new Set(['/login', '/register']);
+const AUTH_PATHS = new Set(['/login', '/register', '/auth/callback']);
 
 export async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;

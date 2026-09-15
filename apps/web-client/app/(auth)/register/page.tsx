@@ -1,5 +1,12 @@
 import { RegisterForm } from './register-form';
 
-export default function RegisterPage() {
-  return <RegisterForm />;
+type RegisterPageProps = {
+  searchParams: Promise<{ error?: string }>;
+};
+
+export default async function RegisterPage({
+  searchParams,
+}: RegisterPageProps) {
+  const { error } = await searchParams;
+  return <RegisterForm oauthError={error === 'oauth'} />;
 }

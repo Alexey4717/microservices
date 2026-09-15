@@ -34,6 +34,8 @@ pnpm run start:gateway
 
 Секреты Google/GitHub опциональны при старте. Без них парольный логин работает, OAuth-провайдер отклонит запрос.
 
+После успеха, если задан `OAUTH_SUCCESS_REDIRECT_URL` (для веб-клиента: `http://localhost:4000/auth/callback`), gateway редиректит туда с токенами в hash. Отмена согласия на callback уводит на `{origin}/login?error=oauth`.
+
 Для туннеля (ngrok) задайте `OAUTH_CALLBACK_BASE_URL`.
 
 ## gRPC-клиент

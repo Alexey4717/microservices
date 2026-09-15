@@ -7,7 +7,7 @@ import {
 
 import { getAccessToken } from '@/lib/auth/access-token';
 import { gatewayFetch } from '@/lib/auth/gateway-fetch';
-import { getGraphqlUrl } from '@/lib/graphql/url';
+import { getServerGraphqlUrl } from '@/lib/graphql/url';
 
 export const { getClient, query, PreloadQuery } = registerApolloClient(
   async () => {
@@ -16,7 +16,7 @@ export const { getClient, query, PreloadQuery } = registerApolloClient(
     return new ApolloClient({
       cache: new InMemoryCache(),
       link: new HttpLink({
-        uri: getGraphqlUrl(),
+        uri: getServerGraphqlUrl(),
         fetch: gatewayFetch,
         headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
       }),

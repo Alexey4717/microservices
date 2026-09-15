@@ -66,20 +66,20 @@ pnpm run start:all
 
 ## Порты
 
-| Сервис | Адрес | Назначение |
-| --- | --- | --- |
-| Gateway | `http://localhost:3000` | GraphQL и OAuth |
-| GraphQL Playground | `http://localhost:3000/graphql` | IDE в режиме development |
-| Web client | `http://localhost:4000` | Next.js, `pnpm run start:web` |
-| Mailer health | `http://127.0.0.1:3001/health` | `MAILER_HOST`:`MAILER_PORT` (по умолчанию localhost), внутренний HTTP |
-| Files health | `http://127.0.0.1:3002/health` | `FILES_HOST`:`FILES_PORT` (по умолчанию localhost), внутренний HTTP |
-| Users gRPC | `127.0.0.1:50051` | Только localhost, не публиковать |
-| Files gRPC | `127.0.0.1:50052` | Только localhost, не публиковать |
-| PostgreSQL | `localhost:5433` | БД `users`, `gateway` и `files` (порт хоста 5433, чтобы не пересечься с локальным Postgres) |
-| MinIO API | `http://localhost:9000` | S3-совместимое хранилище, бакет `avatars` |
-| MinIO Console | `http://localhost:9001` | UI MinIO (`minioadmin` / `minioadmin` локально) |
-| RabbitMQ | `localhost:5672` | AMQP |
-| RabbitMQ UI | `http://localhost:15672` | guest/guest |
+| Сервис             | Адрес                           | Назначение                                                                                  |
+| ------------------ | ------------------------------- | ------------------------------------------------------------------------------------------- |
+| Gateway            | `http://localhost:3000`         | GraphQL и OAuth                                                                             |
+| GraphQL Playground | `http://localhost:3000/graphql` | IDE в режиме development                                                                    |
+| Web client         | `http://localhost:4000`         | Next.js, `pnpm run start:web`                                                               |
+| Mailer health      | `http://127.0.0.1:3001/health`  | `MAILER_HOST`:`MAILER_PORT` (по умолчанию localhost), внутренний HTTP                       |
+| Files health       | `http://127.0.0.1:3002/health`  | `FILES_HOST`:`FILES_PORT` (по умолчанию localhost), внутренний HTTP                         |
+| Users gRPC         | `127.0.0.1:50051`               | Только localhost, не публиковать                                                            |
+| Files gRPC         | `127.0.0.1:50052`               | Только localhost, не публиковать                                                            |
+| PostgreSQL         | `localhost:5433`                | БД `users`, `gateway` и `files` (порт хоста 5433, чтобы не пересечься с локальным Postgres) |
+| MinIO API          | `http://localhost:9000`         | S3-совместимое хранилище, бакет `avatars`                                                   |
+| MinIO Console      | `http://localhost:9001`         | UI MinIO (`minioadmin` / `minioadmin` локально)                                             |
+| RabbitMQ           | `localhost:5672`                | AMQP                                                                                        |
+| RabbitMQ UI        | `http://localhost:15672`        | guest/guest                                                                                 |
 
 ## CQRS на gateway
 
@@ -109,10 +109,16 @@ Playground / GraphiQL: [http://localhost:3000/graphql](http://localhost:3000/gra
 
 ```graphql
 mutation {
-  register(input: { email: "a@example.com", password: "password1", name: "Ann" }) {
+  register(
+    input: { email: "a@example.com", password: "password1", name: "Ann" }
+  ) {
     accessToken
     refreshToken
-    user { id email name }
+    user {
+      id
+      email
+      name
+    }
   }
 }
 
@@ -124,12 +130,25 @@ mutation {
 }
 
 query {
-  me { id email name avatarUrl }
+  me {
+    id
+    email
+    name
+    avatarUrl
+  }
 }
 
 mutation {
-  updateMe(input: { name: "Ann", avatarUrl: "http://localhost:9000/avatars/u1/file.jpg" }) {
-    id email name avatarUrl
+  updateMe(
+    input: {
+      name: "Ann"
+      avatarUrl: "http://localhost:9000/avatars/u1/file.jpg"
+    }
+  ) {
+    id
+    email
+    name
+    avatarUrl
   }
 }
 ```
@@ -160,13 +179,14 @@ curl http://localhost:3000/graphql \
 - `GET /auth/google` и `GET /auth/google/callback`
 - `GET /auth/github` и `GET /auth/github/callback`
 
-После успеха gateway отдаёт HTML с токенами или редирект на `OAUTH_SUCCESS_REDIRECT_URL` (токены в hash).
+Кнопки Google / GitHub на `/login` и `/register` ведут на эти REST-маршруты gateway (полный редирект браузера, не GraphQL). Callback у провайдера: `http://localhost:3000/auth/google/callback` и `http://localhost:3000/auth/github/callback`. После успеха gateway отдаёт HTML с токенами или редирект на `OAUTH_SUCCESS_REDIRECT_URL` (по умолчанию `http://localhost:4000/auth/callback`, токены в hash). Фронт читает hash, кладёт refresh в httpOnly-cookie и открывает `/`. Если пользователь отменил согласие, callback редиректит на `/login?error=oauth`.
 
 Логин/пароль работают без OAuth-секретов. Чтобы OAuth заработал:
 
 1. Создайте приложения в Google Cloud / GitHub.
 2. Укажите callback: `http://localhost:3000/auth/google/callback` (и аналог для GitHub).
-3. Для доступа из интернета используйте ngrok и выставьте `OAUTH_CALLBACK_BASE_URL` на публичный HTTPS-URL ngrok.
+3. Задайте `OAUTH_SUCCESS_REDIRECT_URL=http://localhost:4000/auth/callback` (как в `.env.example`) и перезапустите gateway.
+4. Для доступа из интернета используйте ngrok и выставьте `OAUTH_CALLBACK_BASE_URL` на публичный HTTPS-URL ngrok.
 
 ## Инварианты
 

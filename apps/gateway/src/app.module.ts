@@ -14,6 +14,8 @@ import { UserProjectionController } from './controllers/user-projection.controll
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { FilesGrpcModule } from './grpc/files-grpc.module';
 import { UsersGrpcModule } from './grpc/users-grpc.module';
+import { GithubAuthGuard } from './guards/github-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AuthResolver } from './resolvers/auth.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
 import { AuthService } from './services/auth.service';
@@ -70,6 +72,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtStrategy,
     GoogleStrategy,
     GithubStrategy,
+    GoogleAuthGuard,
+    GithubAuthGuard,
   ],
 })
 export class AppModule {}

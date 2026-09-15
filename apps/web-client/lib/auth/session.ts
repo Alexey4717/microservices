@@ -7,6 +7,7 @@ import {
   SESSION_USER_HEADER,
 } from './constants';
 import { isPrefetchRequest, isServerActionRequest } from './request-kind';
+import { isGatewayUnavailableError } from './rotate-session';
 import { type Session, loadSession, peekSession } from './session-store';
 import { decodeSessionUser } from './session-user';
 import { applySetCookieHeaders } from './set-cookie';
@@ -39,11 +40,18 @@ export const getSession = cache(async (): Promise<Session | null> => {
     return null;
   }
 
-  const session = await loadSession(refreshToken);
-  if (session?.setCookieHeaders.length) {
-    await applySetCookieHeaders(session.setCookieHeaders);
+  try {
+    const session = await loadSession(refreshToken);
+    if (session?.setCookieHeaders.length) {
+      await applySetCookieHeaders(session.setCookieHeaders);
+    }
+    return session;
+  } catch (error) {
+    if (isGatewayUnavailableError(error)) {
+      return null;
+    }
+    throw error;
   }
-  return session;
 });
 
 function readSessionFromProxy(

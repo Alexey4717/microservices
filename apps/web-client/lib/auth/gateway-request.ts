@@ -1,6 +1,6 @@
 import { type DocumentNode, print } from 'graphql';
 
-import { getGraphqlUrl } from '@/lib/graphql/url';
+import { getServerGraphqlUrl } from '@/lib/graphql/url';
 
 import { REFRESH_COOKIE_NAME } from './constants';
 
@@ -27,7 +27,7 @@ export async function postGatewayGraphQL(
 
   const query = typeof document === 'string' ? document : print(document);
 
-  return fetch(getGraphqlUrl(), {
+  return fetch(getServerGraphqlUrl(), {
     method: 'POST',
     headers,
     body: JSON.stringify({ query, variables }),

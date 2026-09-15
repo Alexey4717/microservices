@@ -64,6 +64,18 @@ export async function registerAction(
   redirect('/');
 }
 
+export async function completeOauthCallback(
+  refreshToken: string,
+): Promise<void> {
+  const token = refreshToken.trim();
+  if (!token) {
+    redirect('/login?error=oauth');
+  }
+
+  await persistRefreshCookie(token);
+  redirect('/');
+}
+
 export async function rememberSessionUser(user: AuthUser): Promise<void> {
   if (!user.id || !user.email) {
     return;
