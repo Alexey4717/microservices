@@ -61,6 +61,19 @@ export class PaymentsGrpcService implements OnModuleInit {
     );
   }
 
+  getPayment(
+    id: string,
+    internalToken: string,
+    userId: string,
+  ): Promise<PaymentResponse> {
+    return this.callGraphql(() =>
+      this.payments.getPayment(
+        { id },
+        createInternalMetadata(internalToken, userId),
+      ),
+    );
+  }
+
   listMyPayments(
     internalToken: string,
     userId: string,

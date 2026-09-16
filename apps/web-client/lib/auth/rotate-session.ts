@@ -1,7 +1,8 @@
-import type {
-  AuthPayload,
-  AuthUser,
-  GraphQLResponse,
+import {
+  type AuthPayload,
+  type AuthUser,
+  type GraphQLResponse,
+  toAccountTier,
 } from '@/lib/graphql/types';
 
 import { REFRESH_COOKIE_NAME } from './constants';
@@ -53,6 +54,7 @@ const REFRESH_QUERY = `
         email
         name
         avatarUrl
+        accountTier
       }
     }
   }
@@ -87,7 +89,12 @@ export async function rotateRefreshToken(
   const payload = json.data?.refresh;
   const accessToken = payload?.accessToken ?? null;
   const nextRefreshToken = payload?.refreshToken ?? null;
-  const user = payload?.user ?? null;
+  const user = payload?.user
+    ? {
+        ...payload.user,
+        accountTier: toAccountTier(payload.user.accountTier),
+      }
+    : null;
   const setCookieHeaders = setCookieHeadersFrom(
     response,
     nextRefreshToken,

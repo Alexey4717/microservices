@@ -15,6 +15,7 @@ import type {
 } from '@libs/proto';
 
 import { PAYMENT_STATUSES, PRODUCT_CODE_PREMIUM } from './payment-constants';
+import { paymentReturnUrl } from './payment-return-url';
 import { PrismaService } from './prisma.service';
 import { PaymentProviderRegistry } from './providers/provider-registry';
 
@@ -98,6 +99,19 @@ export class PaymentsService {
         },
       }));
 
+    let returnUrl: string;
+    try {
+      returnUrl = paymentReturnUrl(
+        this.configService.getOrThrow<string>('CORS_ORIGIN'),
+        payment.id,
+      );
+    } catch {
+      throw new RpcException({
+        code: status.FAILED_PRECONDITION,
+        message: 'Invalid CORS_ORIGIN',
+      });
+    }
+
     try {
       const created = await this.providers.get(provider).createCheckout({
         paymentId: payment.id,
@@ -105,10 +119,8 @@ export class PaymentsService {
         productCode,
         amountMinor: product.amountMinor,
         currency: product.currency,
-        successUrl: this.configService.getOrThrow<string>(
-          'PAYMENT_SUCCESS_URL',
-        ),
-        cancelUrl: this.configService.getOrThrow<string>('PAYMENT_CANCEL_URL'),
+        successUrl: returnUrl,
+        cancelUrl: returnUrl,
       });
 
       const updated = await this.prisma.payment.update({

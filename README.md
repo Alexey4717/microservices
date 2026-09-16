@@ -191,6 +191,19 @@ mutation {
 }
 
 query {
+  payment(id: $id) {
+    id
+    productCode
+    provider
+    status
+    amountMinor
+    currency
+    checkoutUrl
+    createdAt
+  }
+}
+
+query {
   myPayments {
     id
     productCode
@@ -204,7 +217,9 @@ query {
 }
 ```
 
-`createCheckout` и `myPayments` требуют `Authorization: Bearer <accessToken>`. User id берётся из JWT. После успешной оплаты webhook помечает платёж `SUCCEEDED`, `users` ставит `accountTier=PREMIUM`, gateway проекция обновляется через `user.updated`.
+`createCheckout`, `payment` и `myPayments` требуют `Authorization: Bearer <accessToken>`. User id берётся из JWT. После checkout Stripe/PayPal возвращают на `/payments/:id` (UUID нашего платежа). Пока статус `PENDING`, web-client опрашивает `payment(id)`. После успешной оплаты webhook помечает платёж `SUCCEEDED`, `users` ставит `accountTier=PREMIUM`, gateway проекция обновляется через `user.updated`.
+
+Origin фронта — `CORS_ORIGIN` (тот же, что для CORS gateway); path/query игнорируются, success и cancel переписываются в `{CORS_ORIGIN}/payments/{paymentId}`.
 
 Webhook HTTP (не GraphQL, не gateway):
 
@@ -213,7 +228,7 @@ Webhook HTTP (не GraphQL, не gateway):
 
 Локальная проверка Stripe: `stripe listen --forward-to localhost:3003/webhooks/stripe`, секрет `whsec_...` в `STRIPE_WEBHOOK_SECRET`, карта `4242`. PayPal sandbox — Client ID/Secret, публичный URL (ngrok) на `/webhooks/paypal`, `PAYPAL_WEBHOOK_ID`. Подробный чеклист: `apps/payments/README.md`.
 
-Браузерный клиент (`apps/web-client`) ходит на тот же `/graphql`. Gateway отвечает CORS с `CORS_ORIGIN` (по умолчанию `http://localhost:4000`).
+Браузерный клиент (`apps/web-client`) ходит на тот же `/graphql`. Покупка PREMIUM (hosted checkout Stripe/PayPal) — на странице профиля `/profile`, статус заказа — `/payments/:id`. Gateway отвечает CORS с `CORS_ORIGIN` (по умолчанию `http://localhost:4000`).
 
 ## OAuth (Google / GitHub)
 

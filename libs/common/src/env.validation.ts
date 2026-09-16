@@ -331,10 +331,7 @@ export class PaymentsEnvironmentVariables {
   PAYPAL_API_BASE?: string;
 
   @IsString()
-  PAYMENT_SUCCESS_URL!: string;
-
-  @IsString()
-  PAYMENT_CANCEL_URL!: string;
+  CORS_ORIGIN!: string;
 }
 
 export function validatePaymentsEnv(

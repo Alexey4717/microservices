@@ -1,6 +1,10 @@
 import { cookies } from 'next/headers';
 
-import type { AuthPayload, GraphQLResponse } from '@/lib/graphql/types';
+import {
+  type AuthPayload,
+  type GraphQLResponse,
+  toAccountTier,
+} from '@/lib/graphql/types';
 
 import { REFRESH_COOKIE_NAME } from './constants';
 import { postGatewayGraphQL, refreshCookieHeader } from './gateway-request';
@@ -12,7 +16,7 @@ const LOGIN_QUERY = `
     login(input: $input) {
       accessToken
       refreshToken
-      user { id email name avatarUrl }
+      user { id email name avatarUrl accountTier }
     }
   }
 `;
@@ -22,7 +26,7 @@ const REGISTER_QUERY = `
     register(input: $input) {
       accessToken
       refreshToken
-      user { id email name avatarUrl }
+      user { id email name avatarUrl accountTier }
     }
   }
 `;
@@ -93,7 +97,10 @@ async function mutateAuth(
     return {
       accessToken: payload.accessToken,
       refreshToken: payload.refreshToken,
-      user: payload.user,
+      user: {
+        ...payload.user,
+        accountTier: toAccountTier(payload.user.accountTier),
+      },
     };
   }
 

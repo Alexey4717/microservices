@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import type { AuthUser } from '@/lib/graphql/types';
+import { type AuthUser, toAccountTier } from '@/lib/graphql/types';
 
 import { REFRESH_COOKIE_NAME } from './constants';
 import {
@@ -86,6 +86,7 @@ export async function rememberSessionUser(user: AuthUser): Promise<void> {
     email: user.email,
     name: user.name ?? null,
     avatarUrl: user.avatarUrl ?? null,
+    accountTier: toAccountTier(user.accountTier),
   });
   revalidatePath('/', 'layout');
 }

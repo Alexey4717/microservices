@@ -1,6 +1,6 @@
 # Payments
 
-Приватный сервис разовых покупок PREMIUM: Stripe Checkout и PayPal Orders API v2. Публичный GraphQL — только на gateway (`createCheckout`, `myPayments`). HTTP на payments: health и webhook-и провайдеров. gRPC слушает `127.0.0.1:50053`. Публичные API на `0.0.0.0` не биндить.
+Приватный сервис разовых покупок PREMIUM: Stripe Checkout и PayPal Orders API v2. Публичный GraphQL — только на gateway (`createCheckout`, `payment`, `myPayments`). HTTP на payments: health и webhook-и провайдеров. gRPC слушает `127.0.0.1:50053`. Публичные API на `0.0.0.0` не биндить.
 
 Исходники сгруппированы по типу (`controllers/`, `services/`, `interceptors/`). Сумму и продукт клиент не передаёт: сервер смотрит Product `PREMIUM` (999 USD).
 
@@ -32,7 +32,9 @@
 
    Скопируйте новые ключи из `.env.example` в локальный `.env` (не коммитьте `.env`).
 
-5. Проверка: login → GraphQL `createCheckout` → оплата тестовой картой/buyer → `me.accountTier` = `PREMIUM`.
+5. Проверка: login → GraphQL `createCheckout` → оплата тестовой картой/buyer → возврат на `/payments/:id` → `me.accountTier` = `PREMIUM`.
+
+Origin web-client — `CORS_ORIGIN` (тот же, что у gateway CORS, общий корневой `.env`). Path и query игнорируются: после создания строки Payment оба return URL (success и cancel) становятся `{CORS_ORIGIN}/payments/{paymentId}` — одна страница заказа, статус берётся из БД/webhook.
 
 ## Поток оплаты
 
