@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/payments-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  amountMinor Int
+  currency    String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payment {
+  id                  String   @id @default(uuid())
+  userId              String
+  productCode         String
+  provider            String
+  status              String
+  amountMinor         Int
+  currency            String
+  providerCheckoutId  String?
+  checkoutUrl         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+  @@unique([provider, providerCheckoutId])
+}
+
+model ProcessedWebhook {
+  id        String   @id @default(uuid())
+  provider  String
+  eventId   String
+  createdAt DateTime @default(now())
+
+  @@unique([provider, eventId])
+}

@@ -51,6 +51,7 @@ message UserResponse {
   string email = 2;
   string name = 3;
   string avatar_url = 4;
+  string account_tier = 5;
 }
 
 message AuthResponse {

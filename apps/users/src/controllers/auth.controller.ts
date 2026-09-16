@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, UseInterceptors } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 
 import { Metadata } from '@grpc/grpc-js';
@@ -17,9 +17,11 @@ import type {
   UserResponse,
 } from '@libs/proto';
 
+import { InternalTokenInterceptor } from '../interceptors/internal-token.interceptor';
 import { AuthService } from '../services/auth.service';
 
 @Controller()
+@UseInterceptors(InternalTokenInterceptor)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

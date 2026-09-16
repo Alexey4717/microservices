@@ -315,12 +315,14 @@ export class AuthService {
     email: string;
     name: string | null;
     avatarUrl: string | null;
+    accountTier?: string | null;
   }): void {
     const payload: UserCreatedEvent = {
       userId: user.id,
       email: user.email,
       name: user.name ?? '',
       avatarUrl: user.avatarUrl ?? '',
+      accountTier: user.accountTier ?? 'BASE',
       occurredAt: new Date().toISOString(),
     };
     this.rmqClient.emit(USER_EVENTS.CREATED, payload);
@@ -331,12 +333,14 @@ export class AuthService {
     email: string;
     name: string | null;
     avatarUrl: string | null;
+    accountTier?: string | null;
   }): void {
     const payload: UserUpdatedEvent = {
       userId: user.id,
       email: user.email,
       name: user.name ?? '',
       avatarUrl: user.avatarUrl ?? '',
+      accountTier: user.accountTier ?? 'BASE',
       occurredAt: new Date().toISOString(),
     };
     this.rmqClient.emit(USER_EVENTS.UPDATED, payload);
@@ -432,11 +436,13 @@ function toUserResponse(user: {
   email: string;
   name: string | null;
   avatarUrl: string | null;
+  accountTier?: string | null;
 }): UserResponse {
   return {
     id: user.id,
     email: user.email,
     name: user.name ?? '',
     avatarUrl: user.avatarUrl ?? '',
+    accountTier: user.accountTier || 'BASE',
   };
 }

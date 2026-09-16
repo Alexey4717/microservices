@@ -13,10 +13,12 @@ import { AuthController } from './controllers/auth.controller';
 import { UserProjectionController } from './controllers/user-projection.controller';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { FilesGrpcModule } from './grpc/files-grpc.module';
+import { PaymentsGrpcModule } from './grpc/payments-grpc.module';
 import { UsersGrpcModule } from './grpc/users-grpc.module';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AuthResolver } from './resolvers/auth.resolver';
+import { PaymentsResolver } from './resolvers/payments.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
 import { AuthService } from './services/auth.service';
 import { PrismaService } from './services/prisma.service';
@@ -57,6 +59,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule.register({ session: false }),
     UsersGrpcModule,
     FilesGrpcModule,
+    PaymentsGrpcModule,
   ],
   controllers: [AuthController, UserProjectionController],
   providers: [
@@ -69,6 +72,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthService,
     AuthResolver,
     UsersResolver,
+    PaymentsResolver,
     JwtStrategy,
     GoogleStrategy,
     GithubStrategy,

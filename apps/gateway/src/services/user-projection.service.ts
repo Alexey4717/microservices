@@ -14,6 +14,7 @@ export type UserProjectionRecord = {
   email: string;
   name: string | null;
   avatarUrl: string | null;
+  accountTier: string;
 };
 
 type ProjectionWrite = {
@@ -21,6 +22,7 @@ type ProjectionWrite = {
   email: string;
   name?: string | null;
   avatarUrl?: string | null;
+  accountTier?: string | null;
 };
 
 @Injectable()
@@ -52,6 +54,7 @@ export class UserProjectionService {
   private async upsert(input: ProjectionWrite): Promise<void> {
     const name = emptyToNull(input.name);
     const avatarUrl = emptyToNull(input.avatarUrl);
+    const accountTier = input.accountTier?.trim() || 'BASE';
 
     await this.prisma.userProjection.upsert({
       where: { id: input.id },
@@ -60,11 +63,13 @@ export class UserProjectionService {
         email: input.email,
         name,
         avatarUrl,
+        accountTier,
       },
       update: {
         email: input.email,
         name,
         avatarUrl,
+        accountTier,
       },
     });
   }
@@ -76,6 +81,7 @@ function fromPublicProfile(user: UserResponse): ProjectionWrite {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatarUrl,
+    accountTier: user.accountTier,
   };
 }
 
@@ -85,6 +91,7 @@ function fromUserEvent(event: UserPublicProfilePayload): ProjectionWrite {
     email: event.email,
     name: event.name,
     avatarUrl: event.avatarUrl,
+    accountTier: event.accountTier,
   };
 }
 
@@ -99,5 +106,6 @@ function toUserResponse(record: UserProjectionRecord): UserResponse {
     email: record.email,
     name: record.name ?? '',
     avatarUrl: record.avatarUrl ?? '',
+    accountTier: record.accountTier || 'BASE',
   };
 }

@@ -83,6 +83,9 @@ export class GatewayEnvironmentVariables {
   FILES_GRPC_URL!: string;
 
   @IsString()
+  PAYMENTS_GRPC_URL!: string;
+
+  @IsString()
   GATEWAY_DATABASE_URL!: string;
 
   @IsString()
@@ -274,6 +277,80 @@ export function validateFilesEnv(
   if (errors.length > 0) {
     throw new Error(
       `Некорректный .env для files: ${errors
+        .map((error) => Object.values(error.constraints ?? {}).join(', '))
+        .join('; ')}`,
+    );
+  }
+
+  return validated as unknown as Record<string, unknown>;
+}
+
+export class PaymentsEnvironmentVariables {
+  @IsOptional()
+  @IsString()
+  NODE_ENV?: string;
+
+  @IsString()
+  PAYMENTS_DATABASE_URL!: string;
+
+  @IsString()
+  PAYMENTS_GRPC_URL!: string;
+
+  @IsOptional()
+  @IsString()
+  PAYMENTS_HOST?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  PAYMENTS_PORT?: number;
+
+  @IsString()
+  RABBITMQ_URL!: string;
+
+  @IsString()
+  INTERNAL_SERVICE_TOKEN!: string;
+
+  @IsString()
+  STRIPE_SECRET_KEY!: string;
+
+  @IsString()
+  STRIPE_WEBHOOK_SECRET!: string;
+
+  @IsString()
+  PAYPAL_CLIENT_ID!: string;
+
+  @IsString()
+  PAYPAL_CLIENT_SECRET!: string;
+
+  @IsString()
+  PAYPAL_WEBHOOK_ID!: string;
+
+  @IsOptional()
+  @IsString()
+  PAYPAL_API_BASE?: string;
+
+  @IsString()
+  PAYMENT_SUCCESS_URL!: string;
+
+  @IsString()
+  PAYMENT_CANCEL_URL!: string;
+}
+
+export function validatePaymentsEnv(
+  config: Record<string, unknown>,
+): Record<string, unknown> {
+  const validated = plainToInstance(PaymentsEnvironmentVariables, config, {
+    enableImplicitConversion: true,
+  });
+  const errors = validateSync(validated, {
+    skipMissingProperties: false,
+    forbidUnknownValues: false,
+  });
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Некорректный .env для payments: ${errors
         .map((error) => Object.values(error.constraints ?? {}).join(', '))
         .join('; ')}`,
     );

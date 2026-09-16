@@ -44,6 +44,9 @@
       "path": "./apps/files/tsconfig.app.json"
     },
     {
+      "path": "./apps/payments/tsconfig.app.json"
+    },
+    {
       "path": "./libs/common/tsconfig.lib.json"
     },
     {

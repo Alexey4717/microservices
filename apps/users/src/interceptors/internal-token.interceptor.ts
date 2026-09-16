@@ -12,13 +12,22 @@ import { Observable } from 'rxjs';
 
 import { INTERNAL_TOKEN_METADATA_KEY, getMetadataValue } from '@libs/common';
 
-import { extractGrpcMetadata } from './grpc-context';
+import { extractGrpcMetadata, isGrpcMetadataContext } from './grpc-context';
 
 @Injectable()
 export class InternalTokenInterceptor implements NestInterceptor {
   constructor(private readonly configService: ConfigService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    if (context.getType() !== 'rpc') {
+      return next.handle();
+    }
+
+    const rpcContext: unknown = context.switchToRpc().getContext();
+    if (!isGrpcMetadataContext(rpcContext)) {
+      return next.handle();
+    }
+
     const metadata = extractGrpcMetadata(context);
     const incoming = getMetadataValue(metadata, INTERNAL_TOKEN_METADATA_KEY);
     const expected = this.configService.getOrThrow<string>(

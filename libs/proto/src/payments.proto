@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package payments;
+
+service PaymentsService {
+  rpc CreateCheckout (CreateCheckoutRequest) returns (CheckoutResponse);
+  rpc GetPayment (GetPaymentRequest) returns (PaymentResponse);
+  rpc ListMyPayments (ListMyPaymentsRequest) returns (ListMyPaymentsResponse);
+}
+
+message CreateCheckoutRequest {
+  string provider = 1;
+  string product_code = 2;
+}
+
+message CheckoutResponse {
+  string payment_id = 1;
+  string checkout_url = 2;
+  string provider = 3;
+  string status = 4;
+}
+
+message GetPaymentRequest {
+  string id = 1;
+}
+
+message ListMyPaymentsRequest {}
+
+message PaymentResponse {
+  string id = 1;
+  string user_id = 2;
+  string product_code = 3;
+  string provider = 4;
+  string status = 5;
+  int32 amount_minor = 6;
+  string currency = 7;
+  string checkout_url = 8;
+  string created_at = 9;
+}
+
+message ListMyPaymentsResponse {
+  repeated PaymentResponse payments = 1;
+}

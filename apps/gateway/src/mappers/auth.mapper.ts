@@ -1,5 +1,6 @@
 import type { AuthResponse, UserResponse } from '@libs/proto';
 
+import { AccountTier } from '../models/account-tier.enum';
 import { AuthPayload } from '../models/auth-payload.model';
 import { UserModel } from '../models/user.model';
 
@@ -9,6 +10,7 @@ export function toUserModel(user: UserResponse): UserModel {
     email: user.email,
     name: user.name || undefined,
     avatarUrl: user.avatarUrl || undefined,
+    accountTier: toAccountTier(user.accountTier),
   };
 }
 
@@ -18,4 +20,8 @@ export function toAuthPayload(result: AuthResponse): AuthPayload {
     refreshToken: result.refreshToken,
     user: toUserModel(result.user),
   };
+}
+
+function toAccountTier(value: string | undefined): AccountTier {
+  return value === AccountTier.PREMIUM ? AccountTier.PREMIUM : AccountTier.BASE;
 }

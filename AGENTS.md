@@ -26,13 +26,13 @@ pnpm exec nest generate library <name> --prefix app
 pnpm run start:all
 ```
 
-`start:all` / `start:all:dev` запускают `users`, `mailer`, `files` и `gateway` параллельно через `concurrently` (`pnpm run start:<name>`). Падение одного процесса остальные не убивает (`--kill-others-on-fail false`). Ctrl+C останавливает всех детей. `start:all:prod` сначала собирает `build:*:prod` (без `.d.ts` / `.js.map`), затем те же процессы из `dist/`.
+`start:all` / `start:all:dev` запускают `users`, `mailer`, `files`, `payments` и `gateway` параллельно через `concurrently` (`pnpm run start:<name>`). Падение одного процесса остальные не убивает (`--kill-others-on-fail false`). Ctrl+C останавливает всех детей. `start:all:prod` сначала собирает `build:*:prod` (без `.d.ts` / `.js.map`), затем те же процессы из `dist/`.
 
 Новый микросервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и строка в `concurrently` в `start:all` / `start:all:prod`. Отдельный оркестратор и `wait-on` не используются.
 
 Фронт (не Nest, не через `nest generate`, не в `nest-cli.json`): пакет `apps/web-client`, запуск из корня `pnpm run start:web` (порт **4000**; 3000-е оставлены серверам: gateway 3000, mailer 3001). В `start:all` не входит. Линт фронта: `pnpm run lint:web`. Формат: `pnpm run format:web`. Корневые `pnpm lint` / `format` / vitest `apps/web-client` не трогают. Из web-client не импортировать `@libs/*`.
 
-Если порты 3000 / 3001 / 3002 / 4000 / 50051 / 50052 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
+Если порты 3000 / 3001 / 3002 / 3003 / 4000 / 50051 / 50052 / 50053 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
 
 ## Архитектура
 
@@ -54,6 +54,7 @@ pnpm lint
 pnpm run build:gateway
 pnpm run build:users
 pnpm run build:files
+pnpm run build:payments
 ```
 
 Перед сдачей UI/HTTP — `pnpm run start:all`, затем GraphQL register → login → me.

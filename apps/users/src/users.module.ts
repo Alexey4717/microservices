@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
@@ -11,8 +10,10 @@ import {
 } from '@libs/common';
 
 import { AuthController } from './controllers/auth.controller';
+import { PaymentsEventsController } from './controllers/payments-events.controller';
 import { InternalTokenInterceptor } from './interceptors/internal-token.interceptor';
 import { AuthService } from './services/auth.service';
+import { PaymentsEventsService } from './services/payments-events.service';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -48,14 +49,12 @@ import { PrismaService } from './services/prisma.service';
       },
     ]),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, PaymentsEventsController],
   providers: [
     PrismaService,
     AuthService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: InternalTokenInterceptor,
-    },
+    PaymentsEventsService,
+    InternalTokenInterceptor,
   ],
 })
 export class UsersModule {}

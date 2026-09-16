@@ -49,6 +49,15 @@
         "tsConfigPath": "apps/mailer/tsconfig.app.json"
       }
     },
+    "payments": {
+      "type": "application",
+      "root": "apps/payments",
+      "entryFile": "main",
+      "sourceRoot": "apps/payments/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payments/tsconfig.app.json"
+      }
+    },
     "proto": {
       "type": "library",
       "root": "libs/proto",

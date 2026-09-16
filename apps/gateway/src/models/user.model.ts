@@ -1,5 +1,7 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
+import { AccountTier } from './account-tier.enum';
+
 @ObjectType()
 export class UserModel {
   @Field()
@@ -13,4 +15,7 @@ export class UserModel {
 
   @Field({ nullable: true })
   avatarUrl?: string;
+
+  @Field(() => AccountTier)
+  accountTier!: AccountTier;
 }

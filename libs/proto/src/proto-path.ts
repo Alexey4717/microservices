@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { AUTH_PROTO_FILE } from './auth.constants';
 import { FILES_PROTO_FILE } from './files.constants';
+import { PAYMENTS_PROTO_FILE } from './payments.constants';
 
 function resolveProtoPath(filename: string): string {
   const here = __dirname;
@@ -29,4 +30,8 @@ export function getAuthProtoPath(): string {
 
 export function getFilesProtoPath(): string {
   return resolveProtoPath(FILES_PROTO_FILE);
+}
+
+export function getPaymentsProtoPath(): string {
+  return resolveProtoPath(PAYMENTS_PROTO_FILE);
 }

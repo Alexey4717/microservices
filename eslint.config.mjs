@@ -26,6 +26,7 @@ export default tseslint.config(
       'apps/users/**/*.ts',
       'apps/mailer/**/*.ts',
       'apps/files/**/*.ts',
+      'apps/payments/**/*.ts',
       'libs/**/*.ts',
     ],
     languageOptions: {

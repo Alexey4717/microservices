@@ -3,6 +3,7 @@ import { EventPattern, Payload } from '@nestjs/microservices';
 
 import { USER_EVENTS, type UserCreatedEvent } from '@libs/common';
 
+import { isStaleUserCreatedEvent } from '../services/welcome-event';
 import { WelcomeMailService } from '../services/welcome-mail.service';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,6 +24,13 @@ export class MailerController {
       return;
     }
 
+    if (isStaleUserCreatedEvent(payload)) {
+      this.logger.log(
+        `Пропускаю ${USER_EVENTS.CREATED} для ${email}: событие старше 24 ч`,
+      );
+      return;
+    }
+
     this.logger.log(`Отправка welcome-письма на ${email}`);
 
     try {
@@ -31,9 +39,8 @@ export class MailerController {
       this.logger.error(
         `Ошибка SMTP при отправке welcome на ${email}: ${
           error instanceof Error ? error.message : String(error)
-        }`,
+        }. Сообщение подтверждено, повторной доставки не будет.`,
       );
-      throw error;
     }
   }
 }

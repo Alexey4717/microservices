@@ -28,11 +28,13 @@ describe('UserProjectionService', () => {
         email: 'a@example.com',
         name: null,
         avatarUrl: null,
+        accountTier: 'BASE',
       },
       update: {
         email: 'a@example.com',
         name: null,
         avatarUrl: null,
+        accountTier: 'BASE',
       },
     });
   });
@@ -43,6 +45,7 @@ describe('UserProjectionService', () => {
       email: 'a@example.com',
       name: '  Ann  ',
       avatarUrl: 'https://cdn.example/a.png',
+      accountTier: 'PREMIUM',
       occurredAt: '2026-09-11T10:00:00.000Z',
     });
 
@@ -53,11 +56,13 @@ describe('UserProjectionService', () => {
         email: 'a@example.com',
         name: 'Ann',
         avatarUrl: 'https://cdn.example/a.png',
+        accountTier: 'PREMIUM',
       },
       update: {
         email: 'a@example.com',
         name: 'Ann',
         avatarUrl: 'https://cdn.example/a.png',
+        accountTier: 'PREMIUM',
       },
     });
   });

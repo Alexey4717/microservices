@@ -8,9 +8,10 @@ datasource db {
 }
 
 model UserProjection {
-  id        String   @id
-  email     String
-  name      String?
-  avatarUrl String?
-  updatedAt DateTime @updatedAt
+  id          String   @id
+  email       String
+  name        String?
+  avatarUrl   String?
+  accountTier String   @default("BASE")
+  updatedAt   DateTime @updatedAt
 }
