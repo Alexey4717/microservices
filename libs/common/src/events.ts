@@ -54,6 +54,7 @@ export function mailerUsersEventsOptions(url: string) {
         'x-overflow': 'drop-head',
       },
     },
+    // Nest 12 при false не ack'ает сам — consumer обязан вызвать ackRmqMessage.
     noAck: false,
     prefetchCount: 1,
     exchange: USERS_EVENTS_EXCHANGE,
@@ -68,6 +69,7 @@ export function gatewayUserProjectionsOptions(url: string) {
     queue: GATEWAY_USER_PROJECTIONS_QUEUE,
     queueOptions: { durable: true },
     noAck: false,
+    prefetchCount: 1,
     exchange: USERS_EVENTS_EXCHANGE,
     exchangeType: USERS_EVENTS_EXCHANGE_TYPE,
     wildcards: true,
@@ -113,6 +115,7 @@ export function usersPaymentsEventsOptions(url: string) {
     queue: USERS_PAYMENTS_EVENTS_QUEUE,
     queueOptions: { durable: true },
     noAck: false,
+    prefetchCount: 1,
     exchange: PAYMENTS_EVENTS_EXCHANGE,
     exchangeType: PAYMENTS_EVENTS_EXCHANGE_TYPE,
     routingKey: PAYMENT_EVENTS.COMPLETED,

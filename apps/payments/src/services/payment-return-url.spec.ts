@@ -27,9 +27,9 @@ describe('paymentReturnUrl', () => {
   });
 
   it('бросает ошибку при пустом id', () => {
-    expect(() =>
-      paymentReturnUrl('http://localhost:4000', '  '),
-    ).toThrow(RangeError);
+    expect(() => paymentReturnUrl('http://localhost:4000', '  ')).toThrow(
+      RangeError,
+    );
   });
 
   it('бросает ошибку при невалидном base URL', () => {

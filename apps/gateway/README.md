@@ -36,7 +36,7 @@ pnpm run start:gateway
 
 После успеха, если задан `OAUTH_SUCCESS_REDIRECT_URL` (для веб-клиента: `http://localhost:4000/auth/callback`), gateway редиректит туда с токенами в hash. Отмена согласия на callback уводит на `{origin}/login?error=oauth`.
 
-Для туннеля (ngrok) задайте `OAUTH_CALLBACK_BASE_URL`.
+Для туннеля запустите `pnpm run ngrok:dev` в отдельном терминале и задайте `OAUTH_CALLBACK_BASE_URL` на публичный **https**-URL ngrok целиком, включая `.ngrok-free.app`.
 
 ## gRPC-клиент
 

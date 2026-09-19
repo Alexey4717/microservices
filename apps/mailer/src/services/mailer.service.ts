@@ -36,6 +36,9 @@ export class MailerService {
       host: SMTP_HOST,
       port: SMTP_PORT,
       secure: SMTP_SECURE,
+      connectionTimeout: 15_000,
+      greetingTimeout: 15_000,
+      socketTimeout: 20_000,
       auth: {
         user: smtp.user,
         pass: smtp.pass,

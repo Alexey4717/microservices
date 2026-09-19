@@ -54,7 +54,8 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "ngrok:dev": "node scripts/ngrok-dev.mjs"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
@@ -112,6 +113,7 @@
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
+    "ngrok": "5.0.0-beta.2",
     "prettier": "^3.4.2",
     "prisma": "^7.10.0",
     "source-map-support": "^0.5.21",

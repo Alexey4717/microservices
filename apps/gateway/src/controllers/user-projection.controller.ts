@@ -1,11 +1,12 @@
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { Ctx, EventPattern, Payload } from '@nestjs/microservices';
 
 import {
   USER_EVENTS,
   type UserAuthenticatedEvent,
   type UserCreatedEvent,
   type UserUpdatedEvent,
+  ackRmqMessage,
 } from '@libs/common';
 
 import { UserProjectionService } from '../services/user-projection.service';
@@ -19,28 +20,50 @@ export class UserProjectionController {
   constructor(private readonly userProjection: UserProjectionService) {}
 
   @EventPattern(USER_EVENTS.CREATED)
-  async handleUserCreated(@Payload() payload: UserCreatedEvent): Promise<void> {
-    if (!isValidCreated(payload)) {
-      this.logger.warn(`Пропускаю ${USER_EVENTS.CREATED}: невалидный payload`);
-      return;
-    }
+  async handleUserCreated(
+    @Payload() payload: UserCreatedEvent,
+    @Ctx() context: unknown,
+  ): Promise<void> {
+    try {
+      if (!isValidCreated(payload)) {
+        this.logger.warn(
+          `Пропускаю ${USER_EVENTS.CREATED}: невалидный payload`,
+        );
+        return;
+      }
 
-    await this.userProjection.upsertFromCreated(payload);
+      await this.userProjection.upsertFromCreated(payload);
+    } finally {
+      ackRmqMessage(context);
+    }
   }
 
   @EventPattern(USER_EVENTS.UPDATED)
-  async handleUserUpdated(@Payload() payload: UserUpdatedEvent): Promise<void> {
-    if (!isValidUpdated(payload)) {
-      this.logger.warn(`Пропускаю ${USER_EVENTS.UPDATED}: невалидный payload`);
-      return;
-    }
+  async handleUserUpdated(
+    @Payload() payload: UserUpdatedEvent,
+    @Ctx() context: unknown,
+  ): Promise<void> {
+    try {
+      if (!isValidUpdated(payload)) {
+        this.logger.warn(
+          `Пропускаю ${USER_EVENTS.UPDATED}: невалидный payload`,
+        );
+        return;
+      }
 
-    await this.userProjection.upsertFromUpdated(payload);
+      await this.userProjection.upsertFromUpdated(payload);
+    } finally {
+      ackRmqMessage(context);
+    }
   }
 
   @EventPattern(USER_EVENTS.AUTHENTICATED)
-  handleUserAuthenticated(@Payload() _payload: UserAuthenticatedEvent): void {
+  handleUserAuthenticated(
+    @Payload() _payload: UserAuthenticatedEvent,
+    @Ctx() context: unknown,
+  ): void {
     // Binding `user.#` также доставляет этот ключ; без handler Nest роняет consumer.
+    ackRmqMessage(context);
   }
 }
 

@@ -67,6 +67,14 @@ pnpm run start:all
 
 По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит).
 
+Публичный HTTPS-туннель ngrok **не** стартует вместе со стеком. Скрипт поднимает **пакетный** `ngrok` из `node_modules`, а не системный агент: глобальный `ngrok config` ему не подходит, нужен `NGROK_AUTHTOKEN` в `.env` (см. `.env.example`). В отдельном терминале:
+
+```bash
+pnpm run ngrok:dev
+```
+
+Скопируйте **полный** https-URL, включая суффикс `.ngrok-free.app` (например `https://xxxx.ngrok-free.app`). TUI может переносить строку Forwarding — обрезанный хост без `.ngrok-free.app` в браузере даёт `ERR_NAME_NOT_RESOLVED`. Тот же URL печатает скрипт и показывает Web Interface `http://127.0.0.1:4040`. Открывайте https, не http. Gateway должен уже слушать порт (`pnpm run start:all`). Порт берётся из `PORT` (по умолчанию 3000).
+
 ## Порты
 
 | Сервис             | Адрес                           | Назначение                                                                                  |
@@ -265,6 +273,7 @@ Webhook HTTP (не GraphQL, не gateway):
 - `pnpm run start:all:prod` — prod-сборка без `.d.ts`/`.js.map`, затем весь стек из `dist/`
 - `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` — по отдельности (watch)
 - `pnpm run start:web` — Next.js на порту 4000 (`apps/web-client`)
+- `pnpm run ngrok:dev` — туннель ngrok на `PORT` (отдельный терминал, не входит в `start:all`)
 - `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:files:prod` / `pnpm run start:payments:prod` / `pnpm run start:web:prod` — по отдельности из сборки
 - `pnpm run prisma:generate` — клиенты users, gateway, files и payments
 - `pnpm run prisma:migrate` — миграции БД `users`

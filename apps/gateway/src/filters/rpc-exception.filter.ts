@@ -25,7 +25,7 @@ export class RpcExceptionFilter implements ExceptionFilter, GqlExceptionFilter {
     const type = host.getType<string>();
 
     if (type === 'rpc') {
-      // RMQ noAck: false — rethrow не ack'ает и крутит poison message бесконечно.
+      // RMQ noAck: false: handler сам ack'ает в finally. Rethrow здесь не нужен.
       this.logger.error(
         exception instanceof Error ? exception.message : String(exception),
         exception instanceof Error ? exception.stack : undefined,
