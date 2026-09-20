@@ -25,6 +25,14 @@ pnpm run start:gateway
 
 `refresh` и `logout` читают токен из cookie; поле `input.refreshToken` опционально (для Playground). Если нет ни cookie, ни input — 401. Access token по-прежнему возвращается в теле ответа; cookie — источник refresh-токена для веб-клиента.
 
+## Подписки (GraphQL SSE)
+
+`telegramLinked: TelegramLinkedPayload` (`{ ok: Boolean! }`). JWT как у `me` (`Authorization: Bearer`); событие только своему user id из токена, клиентский user id не принимается.
+
+Транспорт — **graphql-sse**, distinct connections (GET/POST `/graphql` с `Accept: text/event-stream`), не WebSocket `graphql-ws` и не отдельный REST `/sse`. Nest GraphQL 14 из коробки даёт только `graphql-ws`; SSE подключён рядом с Apollo на том же `/graphql`. CORS: `CORS_ORIGIN` + credentials, заголовок `Last-Event-ID` разрешён.
+
+Сигнал приходит из RabbitMQ `user.telegram.updated` (очередь `gateway.user-projections`, binding `user.#`) в in-process PubSub. Клиент по событию заново запрашивает `me`.
+
 ## OAuth HTTP
 
 Это единственный публичный REST на gateway:

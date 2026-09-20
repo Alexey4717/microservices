@@ -10,6 +10,10 @@ service AuthService {
   rpc Logout (LogoutRequest) returns (Empty);
   rpc GetMe (GetMeRequest) returns (UserResponse);
   rpc UpdateMe (UpdateMeRequest) returns (UserResponse);
+  rpc GetMeByTelegram (GetMeByTelegramRequest) returns (UserResponse);
+  rpc CreateTelegramLinkToken (CreateTelegramLinkTokenRequest) returns (CreateTelegramLinkTokenResponse);
+  rpc ConsumeTelegramLinkToken (ConsumeTelegramLinkTokenRequest) returns (UserResponse);
+  rpc UpsertTelegramProfile (UpsertTelegramProfileRequest) returns (UserResponse);
 }
 
 message RegisterRequest {
@@ -46,18 +50,50 @@ message UpdateMeRequest {
   optional string avatar_url = 2;
 }
 
+message TelegramProfile {
+  string user_id = 1;
+  string username = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string photo_url = 5;
+}
+
 message UserResponse {
   string id = 1;
   string email = 2;
   string name = 3;
   string avatar_url = 4;
   string account_tier = 5;
+  TelegramProfile telegram = 6;
 }
 
 message AuthResponse {
   string access_token = 1;
   string refresh_token = 2;
   UserResponse user = 3;
+}
+
+message GetMeByTelegramRequest {
+  string telegram_id = 1;
+}
+
+message CreateTelegramLinkTokenRequest {}
+
+message CreateTelegramLinkTokenResponse {
+  string token = 1;
+}
+
+message ConsumeTelegramLinkTokenRequest {
+  string telegram_id = 1;
+  string token = 2;
+}
+
+message UpsertTelegramProfileRequest {
+  string telegram_id = 1;
+  string username = 2;
+  string first_name = 3;
+  string last_name = 4;
+  optional string photo_url = 5;
 }
 
 message Empty {}

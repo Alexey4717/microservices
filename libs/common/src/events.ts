@@ -2,6 +2,7 @@ export const USER_EVENTS = {
   CREATED: 'user.created',
   UPDATED: 'user.updated',
   AUTHENTICATED: 'user.authenticated',
+  TELEGRAM_UPDATED: 'user.telegram.updated',
 } as const;
 
 export const USERS_EVENTS_EXCHANGE = 'users.events';
@@ -31,6 +32,12 @@ export interface UserAuthenticatedEvent {
   method: 'password' | 'oauth' | 'refresh';
   occurredAt: string;
 }
+
+/** Публичный сигнал: Telegram привязан или снимок профиля обновлён. Без секретов. */
+export type UserTelegramUpdatedEvent = {
+  userId: string;
+  occurredAt: string;
+};
 
 export function usersEventsPublisherOptions(url: string) {
   return {

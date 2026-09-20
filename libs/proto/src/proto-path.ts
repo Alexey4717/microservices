@@ -8,8 +8,10 @@ import { PAYMENTS_PROTO_FILE } from './payments.constants';
 function resolveProtoPath(filename: string): string {
   const here = __dirname;
   const candidates = [
-    join(here, filename),
+    // Source of truth first: `nest start --watch` does not recopy *.proto into dist,
+    // so a stale dist file would hide newly added RPCs from ClientGrpc.getService.
     join(process.cwd(), 'libs/proto/src', filename),
+    join(here, filename),
     join(process.cwd(), 'dist/libs/proto/src', filename),
     join(process.cwd(), 'dist/libs/proto', filename),
   ];

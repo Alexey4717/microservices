@@ -1,11 +1,20 @@
 export type AccountTier = 'BASE' | 'PREMIUM';
 
+export type TelegramProfile = {
+  userId: string;
+  username?: string | null;
+  firstName?: string | null;
+  userLastName?: string | null;
+  photoUrl?: string | null;
+};
+
 export type AuthUser = {
   id: string;
   email: string;
   name?: string | null;
   avatarUrl?: string | null;
   accountTier: AccountTier;
+  telegram?: TelegramProfile | null;
 };
 
 export type AuthPayload = {
@@ -16,6 +25,10 @@ export type AuthPayload = {
 export type PaymentProvider = 'STRIPE' | 'PAYPAL';
 
 export type PaymentStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELED';
+
+export type TelegramLink = {
+  url: string;
+};
 
 export type CheckoutPayload = {
   paymentId: string;

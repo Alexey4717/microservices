@@ -17,6 +17,7 @@ describe('AuthService', () => {
   const usersGrpc = {
     getMe: vi.fn(),
     updateMe: vi.fn(),
+    createTelegramLinkToken: vi.fn(),
   };
   const filesGrpc = {
     uploadFile: vi.fn(),
@@ -39,6 +40,9 @@ describe('AuthService', () => {
           provide: ConfigService,
           useValue: {
             getOrThrow: vi.fn().mockReturnValue(INTERNAL_TOKEN),
+            get: vi.fn((key: string) =>
+              key === 'TELEGRAM_BOT_USERNAME' ? 'test_bot' : undefined,
+            ),
           },
         },
       ],
@@ -150,6 +154,20 @@ describe('AuthService', () => {
         }),
       ).rejects.toBeInstanceOf(GraphQLError);
       expect(filesGrpc.uploadFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('createTelegramLink', () => {
+    it('строит t.me ссылку из токена users', async () => {
+      usersGrpc.createTelegramLinkToken.mockResolvedValue({ token: 'abc' });
+
+      await expect(authService.createTelegramLink('u1')).resolves.toEqual({
+        url: 'https://t.me/test_bot?start=link_abc',
+      });
+      expect(usersGrpc.createTelegramLinkToken).toHaveBeenCalledWith(
+        INTERNAL_TOKEN,
+        'u1',
+      );
     });
   });
 });

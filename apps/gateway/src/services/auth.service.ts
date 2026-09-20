@@ -145,6 +145,28 @@ export class AuthService {
     return this.updateMe(userId, { avatarUrl: uploaded.url });
   }
 
+  async createTelegramLink(userId: string): Promise<{ url: string }> {
+    const username = (
+      this.configService.get<string>('TELEGRAM_BOT_USERNAME') ?? ''
+    )
+      .trim()
+      .replace(/^@/, '');
+    if (!username) {
+      throw new GraphQLError('TELEGRAM_BOT_USERNAME не задан', {
+        extensions: {
+          code: 'FAILED_PRECONDITION',
+          http: { status: 500 },
+        },
+      });
+    }
+
+    const issued = await this.usersGrpc.createTelegramLinkToken(
+      this.internalToken(),
+      userId,
+    );
+    return { url: `https://t.me/${username}?start=link_${issued.token}` };
+  }
+
   private async writeThrough(user: UserResponse | undefined): Promise<void> {
     if (!user?.id || !user.email) {
       return;

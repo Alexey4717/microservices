@@ -47,6 +47,9 @@
       "path": "./apps/payments/tsconfig.app.json"
     },
     {
+      "path": "./apps/telegram/tsconfig.app.json"
+    },
+    {
       "path": "./libs/common/tsconfig.lib.json"
     },
     {

@@ -1,15 +1,19 @@
+import { config } from 'dotenv';
 import { spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import net from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { config } from 'dotenv';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 config({ path: join(root, '.env') });
 
-const port = process.env.PORT || '3000';
+const cliPort = process.argv.slice(2).find((arg) => /^\d+$/.test(arg));
+const gatewayPort = process.env.PORT || '3000';
+const paymentsPort = process.env.PAYMENTS_PORT || '3003';
+const telegramPort = process.env.TELEGRAM_PORT || '3004';
+const port = cliPort || gatewayPort;
 const upstream = `127.0.0.1:${port}`;
 const token = (process.env.NGROK_AUTHTOKEN ?? '').trim();
 
@@ -29,9 +33,7 @@ function resolveNgrokBin() {
     process.platform === 'win32' ? 'ngrok.exe' : 'ngrok',
   );
   if (!existsSync(exe)) {
-    console.error(
-      `Бинарник ngrok не найден: ${exe}. Выполните pnpm install.`,
-    );
+    console.error(`Бинарник ngrok не найден: ${exe}. Выполните pnpm install.`);
     process.exit(1);
   }
   return exe;
@@ -54,6 +56,29 @@ function portListening(portNum) {
   });
 }
 
+function hintForPort(publicUrl) {
+  if (port === gatewayPort) {
+    return `GraphQL: ${publicUrl}/graphql`;
+  }
+  if (port === paymentsPort) {
+    return `Stripe webhook: ${publicUrl}/webhooks/stripe\nPayPal webhook: ${publicUrl}/webhooks/paypal`;
+  }
+  if (port === telegramPort) {
+    return `Telegram webhook: ${publicUrl}/webhooks/telegram`;
+  }
+  return '';
+}
+
+function listenHint() {
+  if (port === telegramPort) {
+    return 'Сначала запустите telegram: pnpm run start:telegram (или start:all).';
+  }
+  if (port === paymentsPort) {
+    return 'Сначала запустите payments: pnpm run start:payments (или start:all).';
+  }
+  return 'Сначала запустите gateway: pnpm run start:all (или pnpm run start:gateway).';
+}
+
 async function printPublicUrl() {
   for (let i = 0; i < 40; i += 1) {
     try {
@@ -65,8 +90,11 @@ async function printPublicUrl() {
         );
         if (tunnel?.public_url) {
           const url = tunnel.public_url.replace(/\/$/, '');
+          const extra = hintForPort(url);
           process.stderr.write(
-            `\nПубличный URL (копируйте целиком, включая .ngrok-free.app):\n${url}\nGraphQL: ${url}/graphql\nЛокально: ${tunnel.config?.addr ?? `http://${upstream}`}\nWeb Interface: http://127.0.0.1:4040\n\n`,
+            `\nПубличный URL (копируйте целиком, включая .ngrok-free.app):\n${url}\n${
+              extra ? `${extra}\n` : ''
+            }Локально: ${tunnel.config?.addr ?? `http://${upstream}`}\nWeb Interface: http://127.0.0.1:4040\n\n`,
           );
           return;
         }
@@ -80,15 +108,19 @@ async function printPublicUrl() {
 
 if (!(await portListening(port))) {
   console.warn(
-    `На 127.0.0.1:${port} никто не слушает. Сначала запустите gateway: pnpm run start:all (или pnpm run start:gateway). Туннель всё равно будет создан.`,
+    `На 127.0.0.1:${port} никто не слушает. ${listenHint()} Туннель всё равно будет создан.`,
   );
 }
 
-const child = spawn(resolveNgrokBin(), ['http', upstream, `--authtoken=${token}`], {
-  cwd: root,
-  env: process.env,
-  stdio: 'inherit',
-});
+const child = spawn(
+  resolveNgrokBin(),
+  ['http', upstream, `--authtoken=${token}`],
+  {
+    cwd: root,
+    env: process.env,
+    stdio: 'inherit',
+  },
+);
 
 printPublicUrl();
 

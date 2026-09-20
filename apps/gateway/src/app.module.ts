@@ -22,6 +22,7 @@ import { PaymentsResolver } from './resolvers/payments.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
 import { AuthService } from './services/auth.service';
 import { PrismaService } from './services/prisma.service';
+import { TelegramLinkedService } from './services/telegram-linked.service';
 import { UserProjectionService } from './services/user-projection.service';
 import { GithubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -69,6 +70,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     },
     PrismaService,
     UserProjectionService,
+    TelegramLinkedService,
     AuthService,
     AuthResolver,
     UsersResolver,

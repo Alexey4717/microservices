@@ -14,7 +14,11 @@ import {
 import { AUTH_SERVICE_NAME } from '@libs/proto';
 import type {
   AuthResponse,
+  ConsumeTelegramLinkTokenRequest,
+  CreateTelegramLinkTokenRequest,
+  CreateTelegramLinkTokenResponse,
   Empty,
+  GetMeByTelegramRequest,
   GetMeRequest,
   LoginRequest,
   LogoutRequest,
@@ -42,6 +46,18 @@ interface AuthGrpcClient {
     options?: CallOptions,
   ): Observable<UserResponse>;
   updateMe(data: UpdateMeRequest, metadata: Metadata): Observable<UserResponse>;
+  getMeByTelegram(
+    data: GetMeByTelegramRequest,
+    metadata: Metadata,
+  ): Observable<UserResponse>;
+  createTelegramLinkToken(
+    data: CreateTelegramLinkTokenRequest,
+    metadata: Metadata,
+  ): Observable<CreateTelegramLinkTokenResponse>;
+  consumeTelegramLinkToken(
+    data: ConsumeTelegramLinkTokenRequest,
+    metadata: Metadata,
+  ): Observable<UserResponse>;
 }
 
 @Injectable()
@@ -110,6 +126,18 @@ export class UsersGrpcService implements OnModuleInit {
   ): Promise<UserResponse> {
     return this.callGraphql(() =>
       this.auth.updateMe(data, createInternalMetadata(internalToken, userId)),
+    );
+  }
+
+  createTelegramLinkToken(
+    internalToken: string,
+    userId: string,
+  ): Promise<CreateTelegramLinkTokenResponse> {
+    return this.callGraphql(() =>
+      this.auth.createTelegramLinkToken(
+        {},
+        createInternalMetadata(internalToken, userId),
+      ),
     );
   }
 

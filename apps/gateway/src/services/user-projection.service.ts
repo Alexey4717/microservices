@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import type {
-  UserCreatedEvent,
-  UserPublicProfilePayload,
-  UserUpdatedEvent,
+import {
+  type UserCreatedEvent,
+  type UserPublicProfilePayload,
+  type UserUpdatedEvent,
+  emptyToNull,
 } from '@libs/common';
 import type { UserResponse } from '@libs/proto';
 
@@ -93,11 +94,6 @@ function fromUserEvent(event: UserPublicProfilePayload): ProjectionWrite {
     avatarUrl: event.avatarUrl,
     accountTier: event.accountTier,
   };
-}
-
-function emptyToNull(value: string | null | undefined): string | null {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
 }
 
 function toUserResponse(record: UserProjectionRecord): UserResponse {

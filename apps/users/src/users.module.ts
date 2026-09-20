@@ -15,6 +15,7 @@ import { InternalTokenInterceptor } from './interceptors/internal-token.intercep
 import { AuthService } from './services/auth.service';
 import { PaymentsEventsService } from './services/payments-events.service';
 import { PrismaService } from './services/prisma.service';
+import { TelegramLinkTokenCleanupService } from './services/telegram-link-token-cleanup.service';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PrismaService } from './services/prisma.service';
     PrismaService,
     AuthService,
     PaymentsEventsService,
+    TelegramLinkTokenCleanupService,
     InternalTokenInterceptor,
   ],
 })

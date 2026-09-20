@@ -27,6 +27,7 @@ export default tseslint.config(
       'apps/mailer/**/*.ts',
       'apps/files/**/*.ts',
       'apps/payments/**/*.ts',
+      'apps/telegram/**/*.ts',
       'libs/**/*.ts',
     ],
     languageOptions: {

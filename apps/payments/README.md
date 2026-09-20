@@ -14,7 +14,7 @@
 
    Значение `whsec_...` из вывода CLI положите в `STRIPE_WEBHOOK_SECRET`. Тестовая карта: `4242 4242 4242 4242`.
 
-2. **PayPal.** В Developer Dashboard создайте sandbox-приложение, скопируйте Client ID / Secret. Для webhook нужен публичный HTTPS-URL: `pnpm run ngrok:dev` (порт из `PORT`; для payments задайте `PORT=3003`) и endpoint `https://<host>/webhooks/paypal`. `PAYPAL_WEBHOOK_ID` — id webhook-подписки. Оплата — sandbox buyer.
+2. **PayPal.** В Developer Dashboard создайте sandbox-приложение, скопируйте Client ID / Secret. Для webhook нужен публичный HTTPS-URL: `pnpm run ngrok:dev -- 3003` и endpoint `https://<host>/webhooks/paypal`. `PAYPAL_WEBHOOK_ID` — id webhook-подписки. Оплата — sandbox buyer.
 
 3. Если том Postgres уже существовал, `init.sql` не выполнится повторно. Создайте БД вручную:
 

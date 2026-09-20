@@ -1,6 +1,7 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
 import { AccountTier } from './account-tier.enum';
+import { TelegramProfileModel } from './telegram-profile.model';
 
 @ObjectType()
 export class UserModel {
@@ -18,4 +19,7 @@ export class UserModel {
 
   @Field(() => AccountTier)
   accountTier!: AccountTier;
+
+  @Field(() => TelegramProfileModel, { nullable: true })
+  telegram?: TelegramProfileModel;
 }

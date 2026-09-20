@@ -32,6 +32,11 @@ export class UsersEnvironmentVariables {
 
   @IsString()
   INTERNAL_SERVICE_TOKEN!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  TELEGRAM_LINK_TOKEN_CLEANUP_INTERVAL_MS?: number;
 }
 
 export function validateUsersEnv(
@@ -121,6 +126,10 @@ export class GatewayEnvironmentVariables {
   @IsOptional()
   @IsString()
   GITHUB_CLIENT_SECRET?: string;
+
+  @IsOptional()
+  @IsString()
+  TELEGRAM_BOT_USERNAME?: string;
 }
 
 export function validateGatewayEnv(
@@ -354,4 +363,69 @@ export function validatePaymentsEnv(
   }
 
   return validated as unknown as Record<string, unknown>;
+}
+
+export class TelegramEnvironmentVariables {
+  @IsOptional()
+  @IsString()
+  NODE_ENV?: string;
+
+  @IsString()
+  TELEGRAM_BOT_TOKEN!: string;
+
+  @IsOptional()
+  @IsString()
+  TELEGRAM_BOT_USERNAME?: string;
+
+  @IsString()
+  TELEGRAM_WEBHOOK_SECRET!: string;
+
+  @IsOptional()
+  @IsString()
+  TELEGRAM_WEBHOOK_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  TELEGRAM_HOST?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  TELEGRAM_PORT?: number;
+
+  @IsString()
+  USERS_GRPC_URL!: string;
+
+  @IsString()
+  FILES_GRPC_URL!: string;
+
+  @IsString()
+  INTERNAL_SERVICE_TOKEN!: string;
+}
+
+export function validateTelegramEnv(
+  config: Record<string, unknown>,
+): Record<string, unknown> {
+  const normalized = blankToUndefined(config, [
+    'TELEGRAM_BOT_USERNAME',
+    'TELEGRAM_WEBHOOK_URL',
+    'TELEGRAM_HOST',
+  ]);
+  const validated = plainToInstance(TelegramEnvironmentVariables, normalized, {
+    enableImplicitConversion: true,
+  });
+  const errors = validateSync(validated, {
+    skipMissingProperties: false,
+    forbidUnknownValues: false,
+  });
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Некорректный .env для telegram: ${errors
+        .map((error) => Object.values(error.constraints ?? {}).join(', '))
+        .join('; ')}`,
+    );
+  }
+
+  return normalized;
 }

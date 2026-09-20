@@ -5,10 +5,12 @@ import {
   USER_EVENTS,
   type UserAuthenticatedEvent,
   type UserCreatedEvent,
+  type UserTelegramUpdatedEvent,
   type UserUpdatedEvent,
   ackRmqMessage,
 } from '@libs/common';
 
+import { TelegramLinkedService } from '../services/telegram-linked.service';
 import { UserProjectionService } from '../services/user-projection.service';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,7 +19,10 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export class UserProjectionController {
   private readonly logger = new Logger(UserProjectionController.name);
 
-  constructor(private readonly userProjection: UserProjectionService) {}
+  constructor(
+    private readonly userProjection: UserProjectionService,
+    private readonly telegramLinked: TelegramLinkedService,
+  ) {}
 
   @EventPattern(USER_EVENTS.CREATED)
   async handleUserCreated(
@@ -65,6 +70,35 @@ export class UserProjectionController {
     // Binding `user.#` также доставляет этот ключ; без handler Nest роняет consumer.
     ackRmqMessage(context);
   }
+
+  @EventPattern(USER_EVENTS.TELEGRAM_UPDATED)
+  handleUserTelegramUpdated(
+    @Payload() payload: UserTelegramUpdatedEvent,
+    @Ctx() context: unknown,
+  ): void {
+    try {
+      const userId = telegramUpdatedUserId(payload);
+      if (!userId) {
+        this.logger.warn(
+          `Пропускаю ${USER_EVENTS.TELEGRAM_UPDATED}: невалидный payload`,
+        );
+        return;
+      }
+
+      this.telegramLinked.publish(userId);
+    } finally {
+      ackRmqMessage(context);
+    }
+  }
+}
+
+function telegramUpdatedUserId(payload: unknown): string | undefined {
+  if (typeof payload !== 'object' || payload === null) {
+    return undefined;
+  }
+
+  const userId = 'userId' in payload ? payload.userId : undefined;
+  return typeof userId === 'string' && userId.length > 0 ? userId : undefined;
 }
 
 function isValidCreated(

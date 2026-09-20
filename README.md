@@ -1,15 +1,15 @@
 # Микросервисный монорепозиторий NestJS
 
-Публичный API — GraphQL на `gateway`. Сервис `users` доступен только по gRPC (localhost) и публикует события в RabbitMQ. Сервис `files` хранит аватары в MinIO и метаданные в PostgreSQL. Сервис `payments` создаёт checkout Stripe/PayPal и принимает webhook-и провайдеров. Сервис `mailer` слушает `user.created` и отправляет письма (без gRPC и без БД). Gateway хранит только read-model публичного профиля (не source of truth).
+Публичный API — GraphQL на `gateway`. Сервис `users` доступен только по gRPC (localhost) и публикует события в RabbitMQ. Сервис `files` хранит аватары в MinIO и метаданные в PostgreSQL. Сервис `payments` создаёт checkout Stripe/PayPal и принимает webhook-и провайдеров. Сервис `telegram` принимает webhook Telegram и привязывает бота к существующему аккаунту через gRPC `users`. Сервис `mailer` слушает `user.created` и отправляет письма (без gRPC и без БД). Gateway хранит только read-model публичного профиля (не source of truth).
 
 ## Стек
 
 - NestJS 12 (монорепозиторий), pnpm, ESLint
-- GraphQL (Apollo, code-first) на gateway
+- GraphQL (Apollo, code-first) на gateway; подписки — graphql-sse (SSE), не WebSocket
 - gRPC (`libs/proto/src/auth.proto`, `libs/proto/src/files.proto`, `libs/proto/src/payments.proto`) — `users`, `files` и `payments`
 - Prisma + PostgreSQL: логические БД `users` (источник истины), `files` (метаданные загрузок), `payments` (платежи) и `gateway` (проекция профиля)
 - MinIO (S3) — бакет `avatars`, локально порты 9000/9001
-- RabbitMQ: topic-exchange `users.events` (`user.created`, `user.updated`, `user.authenticated`) и `payments.events` (`payment.completed`, `payment.failed`, `payment.canceled`)
+- RabbitMQ: topic-exchange `users.events` (`user.created`, `user.updated`, `user.authenticated`, `user.telegram.updated`) и `payments.events` (`payment.completed`, `payment.failed`, `payment.canceled`)
 - nodemailer (`mailer`) — welcome-письмо при регистрации
 
 ## Структура
@@ -19,6 +19,7 @@ apps/gateway      — публичный GraphQL + OAuth HTTP + проекция
 apps/users        — gRPC-сервис пользователей (Prisma) + consumer payment.completed
 apps/files        — gRPC-сервис файлов (Prisma + MinIO)
 apps/payments     — gRPC checkout + HTTP webhook Stripe/PayPal (Prisma)
+apps/telegram     — HTTP webhook Telegram + gRPC-клиент к users (без своей БД)
 apps/mailer       — consumer RabbitMQ, SMTP (nodemailer)
 apps/web-client   — Next.js (браузерный клиент к GraphQL gateway)
 libs/proto        — protobuf-контракты (`@libs/proto`)
@@ -59,21 +60,25 @@ pnpm run prisma:migrate:payments
 pnpm run start:all
 ```
 
-`start:all` и `start:all:dev` поднимают `users`, `mailer`, `files`, `payments` и `gateway` параллельно через [concurrently](https://github.com/open-cli-tools/concurrently) (`pnpm run start:users` / `start:mailer` / `start:files` / `start:payments` / `start:gateway`). Префиксы логов: `users`, `mailer`, `files`, `payments`, `gateway`. Падение одного процесса остальные не гасит. Ctrl+C останавливает всех детей. Для собранного режима: `pnpm run start:all:prod` (сначала `build:*:prod` без `.d.ts`/`.js.map`, затем процессы из `dist/`). Docker Compose — Postgres, RabbitMQ и MinIO, не Node-процессы.
+`start:all` и `start:all:dev` поднимают `users`, `mailer`, `files`, `payments`, `telegram` и `gateway` параллельно через [concurrently](https://github.com/open-cli-tools/concurrently) (`pnpm run start:users` / `start:mailer` / `start:files` / `start:payments` / `start:telegram` / `start:gateway`). Префиксы логов: `users`, `mailer`, `files`, `payments`, `telegram`, `gateway`. Падение одного процесса остальные не гасит. Ctrl+C останавливает всех детей. Для собранного режима: `pnpm run start:all:prod` (сначала `build:*:prod` без `.d.ts`/`.js.map`, затем процессы из `dist/`). Docker Compose — Postgres, RabbitMQ и MinIO, не Node-процессы.
 
 Новый сервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и ещё одна команда в `concurrently` в `start:all` / `start:all:prod`.
 
-Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 4000 / 50051 / 50052 / 50053 заняты) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
+Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 4000 / 50051 / 50052 / 50053 заняты) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
 
-По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит).
+По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит).
 
 Публичный HTTPS-туннель ngrok **не** стартует вместе со стеком. Скрипт поднимает **пакетный** `ngrok` из `node_modules`, а не системный агент: глобальный `ngrok config` ему не подходит, нужен `NGROK_AUTHTOKEN` в `.env` (см. `.env.example`). В отдельном терминале:
 
 ```bash
 pnpm run ngrok:dev
+pnpm run ngrok:dev -- 3003
+pnpm run ngrok:dev -- 3004
 ```
 
-Скопируйте **полный** https-URL, включая суффикс `.ngrok-free.app` (например `https://xxxx.ngrok-free.app`). TUI может переносить строку Forwarding — обрезанный хост без `.ngrok-free.app` в браузере даёт `ERR_NAME_NOT_RESOLVED`. Тот же URL печатает скрипт и показывает Web Interface `http://127.0.0.1:4040`. Открывайте https, не http. Gateway должен уже слушать порт (`pnpm run start:all`). Порт берётся из `PORT` (по умолчанию 3000).
+Порт: первый аргумент CLI, иначе `PORT`, иначе `3000`. Бесплатный ngrok держит один туннель (inspector `:4040`): если туннель уже смотрит на gateway, остановите его перед туннелем payments/telegram.
+
+Скопируйте **полный** https-URL, включая суффикс `.ngrok-free.app` (например `https://xxxx.ngrok-free.app`). TUI может переносить строку Forwarding — обрезанный хост без `.ngrok-free.app` в браузере даёт `ERR_NAME_NOT_RESOLVED`. Тот же URL печатает скрипт и показывает Web Interface `http://127.0.0.1:4040`. Открывайте https, не http. Для `:3000` gateway должен уже слушать порт (`pnpm run start:all`). Подсказки в логе: GraphQL на 3000, Stripe/PayPal webhook на 3003, Telegram webhook на 3004.
 
 ## Порты
 
@@ -85,6 +90,7 @@ pnpm run ngrok:dev
 | Mailer health      | `http://127.0.0.1:3001/health`  | `MAILER_HOST`:`MAILER_PORT` (по умолчанию localhost), внутренний HTTP                       |
 | Files health       | `http://127.0.0.1:3002/health`  | `FILES_HOST`:`FILES_PORT` (по умолчанию localhost), внутренний HTTP                         |
 | Payments health    | `http://127.0.0.1:3003/health`  | `PAYMENTS_HOST`:`PAYMENTS_PORT` (по умолчанию localhost), webhook HTTP                      |
+| Telegram health    | `http://127.0.0.1:3004/health`  | `TELEGRAM_HOST`:`TELEGRAM_PORT` (по умолчанию localhost), webhook HTTP                      |
 | Users gRPC         | `127.0.0.1:50051`               | Только localhost, не публиковать                                                            |
 | Files gRPC         | `127.0.0.1:50052`               | Только localhost, не публиковать                                                            |
 | Payments gRPC      | `127.0.0.1:50053`               | Только localhost, не публиковать                                                            |
@@ -238,6 +244,38 @@ Webhook HTTP (не GraphQL, не gateway):
 
 Браузерный клиент (`apps/web-client`) ходит на тот же `/graphql`. Покупка PREMIUM (hosted checkout Stripe/PayPal) — на странице профиля `/profile`, статус заказа — `/payments/:id`. Gateway отвечает CORS с `CORS_ORIGIN` (по умолчанию `http://localhost:4000`).
 
+## Telegram
+
+Привязка бота к уже существующему аккаунту (пользователей из Telegram не создаём). GraphQL на gateway, webhook — сервис `telegram` на `:3004`.
+
+```graphql
+mutation {
+  createTelegramLink {
+    url
+  }
+}
+```
+
+`createTelegramLink` требует `Authorization: Bearer <accessToken>`. User id берётся из JWT. Gateway запрашивает одноразовый токен у `users` и собирает `https://t.me/<TELEGRAM_BOT_USERNAME>?start=link_<token>`. Токен бота на gateway не нужен, достаточно `TELEGRAM_BOT_USERNAME`. После привязки `me.telegram` отдаёт снимок (`userId`, `username`, `firstName`, `userLastName`, `photoUrl`); `photoUrl` — публичный URL из files, не Bot API.
+
+Подписка (не WebSocket):
+
+```graphql
+subscription {
+  telegramLinked {
+    ok
+  }
+}
+```
+
+`telegramLinked` требует тот же Bearer, что и `me`. Транспорт — graphql-sse, distinct connections: GET/POST `http://localhost:3000/graphql` с `Accept: text/event-stream`. После `Start` в Telegram `users` шлёт `user.telegram.updated`; gateway отдаёт событие только этому пользователю. Веб-клиент заново запрашивает `me` (карточка профиля). Подсказка «?» на непривязанной карточке: ссылка 10 минут, повторный клик инвалидирует старую.
+
+Webhook HTTP (не GraphQL, не gateway):
+
+- `POST http://127.0.0.1:3004/webhooks/telegram`
+
+Локально: `pnpm run ngrok:dev -- 3004`, затем `TELEGRAM_WEBHOOK_URL=https://<host>/webhooks/telegram` при старте telegram. Секрет — заголовок `X-Telegram-Bot-Api-Secret-Token`. Кнопка «Привязать Telegram» — на `/profile`. Подробности: `apps/telegram/README.md`.
+
 ## OAuth (Google / GitHub)
 
 Браузер не может завершить OAuth через GraphQL, поэтому на gateway есть HTTP:
@@ -257,7 +295,7 @@ Webhook HTTP (не GraphQL, не gateway):
 ## Инварианты
 
 - Новый микросервис — только `pnpm exec nest generate app <name>`. Фронт `apps/web-client` — Next.js, не Nest.
-- Публичный API — только GraphQL-резолверы gateway. Исключения REST: OAuth на gateway и webhook-и payments (`/webhooks/stripe`, `/webhooks/paypal`).
+- Публичный API — только GraphQL-резолверы gateway. Исключения REST: OAuth на gateway, webhook-и payments (`/webhooks/stripe`, `/webhooks/paypal` на payments) и Telegram webhook (`/webhooks/telegram` на сервисе telegram, не на gateway).
 - Синхронно — gRPC, асинхронно — RabbitMQ.
 - У каждого сервиса своя Prisma-БД (логическая БД в одном Postgres).
 - Gateway имеет только read-model, не source of truth. Mailer без БД.
@@ -269,19 +307,19 @@ Webhook HTTP (не GraphQL, не gateway):
 
 ## Скрипты
 
-- `pnpm run start:all` / `pnpm run start:all:dev` — бэкенд-стек в watch (concurrently): users, mailer, files, payments, gateway
+- `pnpm run start:all` / `pnpm run start:all:dev` — бэкенд-стек в watch (concurrently): users, mailer, files, payments, telegram, gateway
 - `pnpm run start:all:prod` — prod-сборка без `.d.ts`/`.js.map`, затем весь стек из `dist/`
-- `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` — по отдельности (watch)
+- `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` / `pnpm run start:telegram` — по отдельности (watch)
 - `pnpm run start:web` — Next.js на порту 4000 (`apps/web-client`)
-- `pnpm run ngrok:dev` — туннель ngrok на `PORT` (отдельный терминал, не входит в `start:all`)
-- `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:files:prod` / `pnpm run start:payments:prod` / `pnpm run start:web:prod` — по отдельности из сборки
+- `pnpm run ngrok:dev` — туннель ngrok (отдельный терминал, не входит в `start:all`): порт = аргумент CLI / `PORT` / 3000
+- `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:files:prod` / `pnpm run start:payments:prod` / `pnpm run start:telegram:prod` / `pnpm run start:web:prod` — по отдельности из сборки
 - `pnpm run prisma:generate` — клиенты users, gateway, files и payments
 - `pnpm run prisma:migrate` — миграции БД `users`
 - `pnpm run prisma:migrate:gateway` — миграции БД `gateway`
 - `pnpm run prisma:migrate:files` — миграции БД `files`
 - `pnpm run prisma:migrate:payments` — миграции БД `payments`
-- `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` — с sourceMap
-- `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` — без `.d.ts` и `.js.map`
+- `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` / `pnpm run build:telegram` — с sourceMap
+- `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` — без `.d.ts` и `.js.map`
 - `pnpm run build:web` — сборка Next.js
 - `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда
 - `pnpm run lint:web` — ESLint `apps/web-client`

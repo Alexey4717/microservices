@@ -8,6 +8,7 @@ import { graphqlUploadExpress } from 'graphql-upload-ts';
 import { gatewayUserProjectionsOptions } from '@libs/common';
 
 import { AppModule } from './app.module';
+import { registerGraphqlSse } from './helpers/register-graphql-sse';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -40,8 +41,12 @@ async function bootstrap() {
       'Apollo-Require-Preflight',
       'Accept',
       'Origin',
+      'Last-Event-ID',
     ],
   });
+
+  // До init/Apollo, иначе expressMiddleware перехватит text/event-stream.
+  registerGraphqlSse(app);
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,

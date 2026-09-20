@@ -59,6 +59,13 @@ export const ME_QUERY = gql`
       name
       avatarUrl
       accountTier
+      telegram {
+        userId
+        username
+        firstName
+        userLastName
+        photoUrl
+      }
     }
   }
 `;
@@ -71,6 +78,22 @@ export const UPLOAD_AVATAR_MUTATION = gql`
       name
       avatarUrl
       accountTier
+    }
+  }
+`;
+
+export const CREATE_TELEGRAM_LINK_MUTATION = gql`
+  mutation CreateTelegramLink {
+    createTelegramLink {
+      url
+    }
+  }
+`;
+
+export const TELEGRAM_LINKED_SUBSCRIPTION = gql`
+  subscription TelegramLinked {
+    telegramLinked {
+      ok
     }
   }
 `;

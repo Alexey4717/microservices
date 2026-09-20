@@ -6,7 +6,11 @@ import { Metadata } from '@grpc/grpc-js';
 import { AUTH_SERVICE_NAME } from '@libs/proto';
 import type {
   AuthResponse,
+  ConsumeTelegramLinkTokenRequest,
+  CreateTelegramLinkTokenRequest,
+  CreateTelegramLinkTokenResponse,
   Empty,
+  GetMeByTelegramRequest,
   GetMeRequest,
   LoginRequest,
   LogoutRequest,
@@ -14,6 +18,7 @@ import type {
   RefreshRequest,
   RegisterRequest,
   UpdateMeRequest,
+  UpsertTelegramProfileRequest,
   UserResponse,
 } from '@libs/proto';
 
@@ -58,5 +63,32 @@ export class AuthController {
   @GrpcMethod(AUTH_SERVICE_NAME, 'UpdateMe')
   updateMe(data: UpdateMeRequest, metadata: Metadata): Promise<UserResponse> {
     return this.authService.updateMe(data, metadata);
+  }
+
+  @GrpcMethod(AUTH_SERVICE_NAME, 'GetMeByTelegram')
+  getMeByTelegram(data: GetMeByTelegramRequest): Promise<UserResponse> {
+    return this.authService.getMeByTelegram(data);
+  }
+
+  @GrpcMethod(AUTH_SERVICE_NAME, 'CreateTelegramLinkToken')
+  createTelegramLinkToken(
+    data: CreateTelegramLinkTokenRequest,
+    metadata: Metadata,
+  ): Promise<CreateTelegramLinkTokenResponse> {
+    return this.authService.createTelegramLinkToken(data, metadata);
+  }
+
+  @GrpcMethod(AUTH_SERVICE_NAME, 'ConsumeTelegramLinkToken')
+  consumeTelegramLinkToken(
+    data: ConsumeTelegramLinkTokenRequest,
+  ): Promise<UserResponse> {
+    return this.authService.consumeTelegramLinkToken(data);
+  }
+
+  @GrpcMethod(AUTH_SERVICE_NAME, 'UpsertTelegramProfile')
+  upsertTelegramProfile(
+    data: UpsertTelegramProfileRequest,
+  ): Promise<UserResponse> {
+    return this.authService.upsertTelegramProfile(data);
   }
 }

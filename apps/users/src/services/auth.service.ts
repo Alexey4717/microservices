@@ -13,12 +13,19 @@ import {
   USER_ID_METADATA_KEY,
   type UserAuthenticatedEvent,
   type UserCreatedEvent,
+  type UserTelegramUpdatedEvent,
   type UserUpdatedEvent,
+  emptyToNull,
+  emptyToUndefined,
   getMetadataValue,
 } from '@libs/common';
 import type {
   AuthResponse,
+  ConsumeTelegramLinkTokenRequest,
+  CreateTelegramLinkTokenRequest,
+  CreateTelegramLinkTokenResponse,
   Empty,
+  GetMeByTelegramRequest,
   GetMeRequest,
   LoginRequest,
   LogoutRequest,
@@ -26,12 +33,15 @@ import type {
   RefreshRequest,
   RegisterRequest,
   UpdateMeRequest,
+  UpsertTelegramProfileRequest,
   UserResponse,
 } from '@libs/proto';
 
 import { PrismaService } from './prisma.service';
 
 const BCRYPT_ROUNDS = 10;
+const TELEGRAM_OAUTH_PROVIDER = 'telegram';
+const TELEGRAM_LINK_TOKEN_TTL_MS = 10 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -234,7 +244,10 @@ export class AuthService {
       });
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: telegramUserInclude,
+    });
     if (!user) {
       throw new RpcException({
         code: status.UNAUTHENTICATED,
@@ -284,6 +297,227 @@ export class AuthService {
 
     this.emitUpdated(updated);
     return toUserResponse(updated);
+  }
+
+  async getMeByTelegram(data: GetMeByTelegramRequest): Promise<UserResponse> {
+    const telegramId = data.telegramId?.trim();
+    if (!telegramId) {
+      throw new RpcException({
+        code: status.INVALID_ARGUMENT,
+        message: 'telegram_id is required',
+      });
+    }
+
+    const account = await this.prisma.oAuthAccount.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider: TELEGRAM_OAUTH_PROVIDER,
+          providerAccountId: telegramId,
+        },
+      },
+      include: {
+        user: { include: telegramUserInclude },
+      },
+    });
+
+    if (!account) {
+      throw new RpcException({
+        code: status.NOT_FOUND,
+        message: 'Telegram is not linked',
+      });
+    }
+
+    return toUserResponse(account.user);
+  }
+
+  async createTelegramLinkToken(
+    _data: CreateTelegramLinkTokenRequest,
+    metadata: Metadata,
+  ): Promise<CreateTelegramLinkTokenResponse> {
+    const userId = getMetadataValue(metadata, USER_ID_METADATA_KEY);
+    if (!userId) {
+      throw new RpcException({
+        code: status.UNAUTHENTICATED,
+        message: 'Missing user-id metadata',
+      });
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new RpcException({
+        code: status.UNAUTHENTICATED,
+        message: 'User not found',
+      });
+    }
+
+    const token = randomBytes(32).toString('base64url');
+    await this.prisma.$transaction([
+      this.prisma.telegramLinkToken.deleteMany({ where: { userId } }),
+      this.prisma.telegramLinkToken.create({
+        data: {
+          userId,
+          tokenHash: hashToken(token),
+          expiresAt: new Date(Date.now() + TELEGRAM_LINK_TOKEN_TTL_MS),
+        },
+      }),
+    ]);
+
+    return { token };
+  }
+
+  async consumeTelegramLinkToken(
+    data: ConsumeTelegramLinkTokenRequest,
+  ): Promise<UserResponse> {
+    const telegramId = data.telegramId?.trim();
+    const token = data.token?.trim();
+    if (!telegramId || !token) {
+      throw new RpcException({
+        code: status.INVALID_ARGUMENT,
+        message: 'telegram_id and token are required',
+      });
+    }
+
+    const stored = await this.prisma.telegramLinkToken.findUnique({
+      where: { tokenHash: hashToken(token) },
+      include: { user: true },
+    });
+
+    if (!stored || stored.expiresAt.getTime() <= Date.now()) {
+      throw new RpcException({
+        code: status.NOT_FOUND,
+        message: 'Invalid or expired link token',
+      });
+    }
+
+    const existingAccount = await this.prisma.oAuthAccount.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider: TELEGRAM_OAUTH_PROVIDER,
+          providerAccountId: telegramId,
+        },
+      },
+    });
+
+    if (existingAccount) {
+      if (existingAccount.userId !== stored.userId) {
+        throw new RpcException({
+          code: status.ALREADY_EXISTS,
+          message: 'Telegram is already linked to another user',
+        });
+      }
+
+      await this.prisma.$transaction([
+        this.prisma.telegramLinkToken.delete({
+          where: { id: stored.id },
+        }),
+        this.prisma.telegramProfile.upsert(
+          telegramProfileStub(stored.userId, telegramId),
+        ),
+      ]);
+
+      this.emitTelegramUpdated(stored.userId);
+      return this.userResponseById(stored.userId);
+    }
+
+    if (stored.usedAt) {
+      throw new RpcException({
+        code: status.NOT_FOUND,
+        message: 'Invalid or expired link token',
+      });
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.oAuthAccount.create({
+        data: {
+          userId: stored.userId,
+          provider: TELEGRAM_OAUTH_PROVIDER,
+          providerAccountId: telegramId,
+        },
+      }),
+      this.prisma.telegramProfile.upsert(
+        telegramProfileStub(stored.userId, telegramId),
+      ),
+      this.prisma.telegramLinkToken.delete({
+        where: { id: stored.id },
+      }),
+    ]);
+
+    this.emitTelegramUpdated(stored.userId);
+    return this.userResponseById(stored.userId);
+  }
+
+  async upsertTelegramProfile(
+    data: UpsertTelegramProfileRequest,
+  ): Promise<UserResponse> {
+    const telegramId = data.telegramId?.trim();
+    if (!telegramId) {
+      throw new RpcException({
+        code: status.INVALID_ARGUMENT,
+        message: 'telegram_id is required',
+      });
+    }
+
+    const account = await this.prisma.oAuthAccount.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider: TELEGRAM_OAUTH_PROVIDER,
+          providerAccountId: telegramId,
+        },
+      },
+    });
+
+    if (!account) {
+      throw new RpcException({
+        code: status.NOT_FOUND,
+        message: 'Telegram is not linked',
+      });
+    }
+
+    const photoSpecified = hasOptionalStringField(data, 'photoUrl');
+    const photoUrl = photoSpecified
+      ? sanitizePhotoUrl(data.photoUrl)
+      : undefined;
+    const usernameSpecified = hasOptionalStringField(data, 'username');
+    const firstNameSpecified = hasOptionalStringField(data, 'firstName');
+    const lastNameSpecified = hasOptionalStringField(data, 'lastName');
+
+    await this.prisma.telegramProfile.upsert({
+      where: { userId: account.userId },
+      create: {
+        userId: account.userId,
+        telegramUserId: telegramId,
+        username: emptyToNull(data.username),
+        firstName: emptyToNull(data.firstName),
+        lastName: emptyToNull(data.lastName),
+        photoUrl: photoUrl ?? null,
+      },
+      update: {
+        telegramUserId: telegramId,
+        ...(usernameSpecified ? { username: emptyToNull(data.username) } : {}),
+        ...(firstNameSpecified
+          ? { firstName: emptyToNull(data.firstName) }
+          : {}),
+        ...(lastNameSpecified ? { lastName: emptyToNull(data.lastName) } : {}),
+        ...(photoSpecified ? { photoUrl: photoUrl ?? null } : {}),
+      },
+    });
+
+    this.emitTelegramUpdated(account.userId);
+    return this.userResponseById(account.userId);
+  }
+
+  private async userResponseById(userId: string): Promise<UserResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: telegramUserInclude,
+    });
+    if (!user) {
+      throw new RpcException({
+        code: status.NOT_FOUND,
+        message: 'User not found',
+      });
+    }
+    return toUserResponse(user);
   }
 
   private async issueTokens(
@@ -346,6 +580,14 @@ export class AuthService {
     this.rmqClient.emit(USER_EVENTS.UPDATED, payload);
   }
 
+  private emitTelegramUpdated(userId: string): void {
+    const payload: UserTelegramUpdatedEvent = {
+      userId,
+      occurredAt: new Date().toISOString(),
+    };
+    this.rmqClient.emit(USER_EVENTS.TELEGRAM_UPDATED, payload);
+  }
+
   private emitAuthenticated(
     userId: string,
     email: string,
@@ -383,20 +625,15 @@ function normalizeEmail(email: string | undefined): string {
   return (email ?? '').trim().toLowerCase();
 }
 
-function emptyToUndefined(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function emptyToNull(value: string | undefined): string | null {
-  return emptyToUndefined(value) ?? null;
-}
-
 function hasOptionalField(
   data: UpdateMeRequest,
   field: 'name' | 'avatarUrl',
 ): boolean {
-  const record = data as UpdateMeRequest & Record<string, unknown>;
+  return hasOptionalStringField(data, field);
+}
+
+function hasOptionalStringField(data: object, field: string): boolean {
+  const record = data as Record<string, unknown>;
   const oneof = record[`_${field}`];
   if (oneof === field) {
     return true;
@@ -405,6 +642,22 @@ function hasOptionalField(
     oneof === undefined && Object.prototype.hasOwnProperty.call(data, field)
   );
 }
+
+function telegramProfileStub(userId: string, telegramUserId: string) {
+  return {
+    where: { userId },
+    create: { userId, telegramUserId },
+    update: { telegramUserId },
+  };
+}
+
+const telegramUserInclude = {
+  telegramProfile: true,
+  oauthAccounts: {
+    where: { provider: TELEGRAM_OAUTH_PROVIDER },
+    take: 1,
+  },
+} as const;
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -431,18 +684,93 @@ function parseTtlToMs(ttl: string): number {
   return amount * (multipliers[unit] ?? 1000);
 }
 
+type TelegramProfileRecord = {
+  telegramUserId: string;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  photoUrl: string | null;
+};
+
+type TelegramOauthAccount = {
+  provider: string;
+  providerAccountId: string;
+};
+
 function toUserResponse(user: {
   id: string;
   email: string;
   name: string | null;
   avatarUrl: string | null;
   accountTier?: string | null;
+  telegramProfile?: TelegramProfileRecord | null;
+  oauthAccounts?: TelegramOauthAccount[];
 }): UserResponse {
+  const telegram = toTelegramResponse(user);
   return {
     id: user.id,
     email: user.email,
     name: user.name ?? '',
     avatarUrl: user.avatarUrl ?? '',
     accountTier: user.accountTier || 'BASE',
+    ...(telegram ? { telegram } : {}),
   };
+}
+
+function toTelegramResponse(user: {
+  telegramProfile?: TelegramProfileRecord | null;
+  oauthAccounts?: TelegramOauthAccount[];
+}): UserResponse['telegram'] | undefined {
+  if (user.telegramProfile) {
+    return {
+      userId: user.telegramProfile.telegramUserId,
+      username: user.telegramProfile.username ?? '',
+      firstName: user.telegramProfile.firstName ?? '',
+      lastName: user.telegramProfile.lastName ?? '',
+      photoUrl: user.telegramProfile.photoUrl ?? '',
+    };
+  }
+
+  const oauth = user.oauthAccounts?.find(
+    (account) => account.provider === TELEGRAM_OAUTH_PROVIDER,
+  );
+  if (!oauth) {
+    return undefined;
+  }
+
+  return {
+    userId: oauth.providerAccountId,
+    username: '',
+    firstName: '',
+    lastName: '',
+    photoUrl: '',
+  };
+}
+
+function sanitizePhotoUrl(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return null;
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  if (host === 'api.telegram.org' || host.endsWith('.telegram.org')) {
+    return null;
+  }
+  if (parsed.pathname.includes('/file/bot')) {
+    return null;
+  }
+
+  return trimmed;
 }

@@ -71,6 +71,15 @@
         "watchAssets": true
       }
     },
+    "telegram": {
+      "type": "application",
+      "root": "apps/telegram",
+      "entryFile": "main",
+      "sourceRoot": "apps/telegram/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/telegram/tsconfig.app.json"
+      }
+    },
     "users": {
       "type": "application",
       "root": "apps/users",

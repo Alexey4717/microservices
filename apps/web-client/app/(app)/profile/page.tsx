@@ -1,9 +1,6 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { AvatarUpload } from '@/app/(app)/profile/avatar-upload';
-import { PaymentsList } from '@/app/(app)/profile/payments-list';
-import { PremiumCheckout } from '@/app/(app)/profile/premium-checkout';
 import { query } from '@/lib/apollo/server';
 import { rememberSessionUser } from '@/lib/auth/actions';
 import { isPrefetchRequest } from '@/lib/auth/request-kind';
@@ -14,6 +11,11 @@ import {
   type PaymentModel,
   toAccountTier,
 } from '@/lib/graphql/types';
+
+import { TelegramLinkButton } from './telegram-link-button';
+import { AvatarUpload } from './avatar-upload';
+import { PremiumCheckout } from './premium-checkout';
+import { PaymentsList } from './payments-list';
 
 export default async function ProfilePage() {
   const session = await getSession();
@@ -80,6 +82,10 @@ export default async function ProfilePage() {
           </div>
         </dl>
       </div>
+      <TelegramLinkButton
+        accessToken={session.accessToken}
+        telegram={me.telegram}
+      />
       <PremiumCheckout accessToken={session.accessToken} user={me} />
       <PaymentsList payments={payments} />
     </section>

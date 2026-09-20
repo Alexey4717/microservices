@@ -1,9 +1,18 @@
+export interface TelegramProfile {
+  userId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  photoUrl: string;
+}
+
 export interface UserResponse {
   id: string;
   email: string;
   name: string;
   avatarUrl: string;
   accountTier: string;
+  telegram?: TelegramProfile;
 }
 
 export interface AuthResponse {
@@ -44,6 +53,29 @@ export type GetMeRequest = Record<string, never>;
 export interface UpdateMeRequest {
   name?: string;
   avatarUrl?: string;
+}
+
+export interface GetMeByTelegramRequest {
+  telegramId: string;
+}
+
+export type CreateTelegramLinkTokenRequest = Record<string, never>;
+
+export interface CreateTelegramLinkTokenResponse {
+  token: string;
+}
+
+export interface ConsumeTelegramLinkTokenRequest {
+  telegramId: string;
+  token: string;
+}
+
+export interface UpsertTelegramProfileRequest {
+  telegramId: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  photoUrl?: string;
 }
 
 export type Empty = Record<string, never>;
