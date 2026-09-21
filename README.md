@@ -22,6 +22,7 @@ apps/payments     — gRPC checkout + HTTP webhook Stripe/PayPal (Prisma)
 apps/telegram     — HTTP webhook Telegram + gRPC-клиент к users (без своей БД)
 apps/mailer       — consumer RabbitMQ, SMTP (nodemailer)
 apps/web-client   — Next.js (браузерный клиент к GraphQL gateway)
+apps/telegram-mini-app — Vite + React Mini App (порт 4001, не Nest)
 libs/proto        — protobuf-контракты (`@libs/proto`)
 libs/common       — токены клиентов, события, маппинг RpcException (`@libs/common`)
 ```
@@ -64,9 +65,9 @@ pnpm run start:all
 
 Новый сервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и ещё одна команда в `concurrently` в `start:all` / `start:all:prod`.
 
-Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 4000 / 50051 / 50052 / 50053 заняты) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
+Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 4000 / 4001 / 50051 / 50052 / 50053 заняты) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
 
-По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит).
+По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит).
 
 Публичный HTTPS-туннель ngrok **не** стартует вместе со стеком. Скрипт поднимает **пакетный** `ngrok` из `node_modules`, а не системный агент: глобальный `ngrok config` ему не подходит, нужен `NGROK_AUTHTOKEN` в `.env` (см. `.env.example`). В отдельном терминале:
 
@@ -74,11 +75,12 @@ pnpm run start:all
 pnpm run ngrok:dev
 pnpm run ngrok:dev -- 3003
 pnpm run ngrok:dev -- 3004
+pnpm run ngrok:dev -- 4001
 ```
 
-Порт: первый аргумент CLI, иначе `PORT`, иначе `3000`. Бесплатный ngrok держит один туннель (inspector `:4040`): если туннель уже смотрит на gateway, остановите его перед туннелем payments/telegram.
+Порт: первый аргумент CLI, иначе `PORT`, иначе `3000`. Бесплатный ngrok держит один туннель (inspector `:4040`): если туннель уже смотрит на gateway, остановите его перед туннелем payments/telegram/Mini App.
 
-Скопируйте **полный** https-URL, включая суффикс `.ngrok-free.app` (например `https://xxxx.ngrok-free.app`). TUI может переносить строку Forwarding — обрезанный хост без `.ngrok-free.app` в браузере даёт `ERR_NAME_NOT_RESOLVED`. Тот же URL печатает скрипт и показывает Web Interface `http://127.0.0.1:4040`. Открывайте https, не http. Для `:3000` gateway должен уже слушать порт (`pnpm run start:all`). Подсказки в логе: GraphQL на 3000, Stripe/PayPal webhook на 3003, Telegram webhook на 3004.
+Скопируйте **полный** https-URL, включая суффикс `.ngrok-free.app` (например `https://xxxx.ngrok-free.app`). TUI может переносить строку Forwarding — обрезанный хост без `.ngrok-free.app` в браузере даёт `ERR_NAME_NOT_RESOLVED`. Тот же URL печатает скрипт и показывает Web Interface `http://127.0.0.1:4040`. Открывайте https, не http. Для `:3000` gateway должен уже слушать порт (`pnpm run start:all`). Подсказки в логе: GraphQL на 3000, Stripe/PayPal webhook на 3003, Telegram webhook на 3004, Mini App + GraphQL proxy на 4001.
 
 ## Порты
 
@@ -87,6 +89,7 @@ pnpm run ngrok:dev -- 3004
 | Gateway            | `http://localhost:3000`         | GraphQL и OAuth                                                                             |
 | GraphQL Playground | `http://localhost:3000/graphql` | IDE в режиме development                                                                    |
 | Web client         | `http://localhost:4000`         | Next.js, `pnpm run start:web`                                                               |
+| Telegram Mini App  | `http://localhost:4001`         | Vite + React, `pnpm run start:telegram-mini`                                                |
 | Mailer health      | `http://127.0.0.1:3001/health`  | `MAILER_HOST`:`MAILER_PORT` (по умолчанию localhost), внутренний HTTP                       |
 | Files health       | `http://127.0.0.1:3002/health`  | `FILES_HOST`:`FILES_PORT` (по умолчанию localhost), внутренний HTTP                         |
 | Payments health    | `http://127.0.0.1:3003/health`  | `PAYMENTS_HOST`:`PAYMENTS_PORT` (по умолчанию localhost), webhook HTTP                      |
@@ -145,6 +148,19 @@ mutation {
   login(input: { email: "a@example.com", password: "password1" }) {
     accessToken
     refreshToken
+  }
+}
+
+mutation {
+  loginWithTelegram(initData: "query_id=...&user=...&auth_date=...&hash=...") {
+    accessToken
+    user {
+      id
+      email
+      name
+      avatarUrl
+      accountTier
+    }
   }
 }
 
@@ -242,7 +258,7 @@ Webhook HTTP (не GraphQL, не gateway):
 
 Локальная проверка Stripe: `stripe listen --forward-to localhost:3003/webhooks/stripe`, секрет `whsec_...` в `STRIPE_WEBHOOK_SECRET`, карта `4242`. PayPal sandbox — Client ID/Secret, публичный URL (ngrok) на `/webhooks/paypal`, `PAYPAL_WEBHOOK_ID`. Подробный чеклист: `apps/payments/README.md`.
 
-Браузерный клиент (`apps/web-client`) ходит на тот же `/graphql`. Покупка PREMIUM (hosted checkout Stripe/PayPal) — на странице профиля `/profile`, статус заказа — `/payments/:id`. Gateway отвечает CORS с `CORS_ORIGIN` (по умолчанию `http://localhost:4000`).
+Gateway отвечает CORS с `CORS_ORIGIN` (по умолчанию `http://localhost:4000`) и, если задан, origin из `TELEGRAM_MINI_APP_URL`. Return URL Stripe/PayPal по-прежнему только `{CORS_ORIGIN}/payments/:id`.
 
 ## Telegram
 
@@ -274,7 +290,9 @@ Webhook HTTP (не GraphQL, не gateway):
 
 - `POST http://127.0.0.1:3004/webhooks/telegram`
 
-Локально: `pnpm run ngrok:dev -- 3004`, затем `TELEGRAM_WEBHOOK_URL=https://<host>/webhooks/telegram` при старте telegram. Секрет — заголовок `X-Telegram-Bot-Api-Secret-Token`. Кнопка «Привязать Telegram» — на `/profile`. Подробности: `apps/telegram/README.md`.
+Локально: `pnpm run ngrok:dev -- 3004`, затем `TELEGRAM_WEBHOOK_URL=https://<host>/webhooks/telegram` при старте telegram. Секрет — заголовок `X-Telegram-Bot-Api-Secret-Token`. Кнопка «Привязать Telegram» — на `/profile`.
+
+Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-mini`, затем `pnpm run ngrok:dev -- 4001`. Публичный URL → `TELEGRAM_MINI_APP_URL` и BotFather. Вход — GraphQL `loginWithTelegram(initData)` (HMAC на `users`, токен бота на gateway не нужен). В обычном браузере по тому же URL — только экран «откройте в Telegram». Подробности: `apps/telegram/README.md` и `apps/telegram-mini-app/README.md`.
 
 ## OAuth (Google / GitHub)
 
@@ -294,7 +312,7 @@ Webhook HTTP (не GraphQL, не gateway):
 
 ## Инварианты
 
-- Новый микросервис — только `pnpm exec nest generate app <name>`. Фронт `apps/web-client` — Next.js, не Nest.
+- Новый микросервис — только `pnpm exec nest generate app <name>`. Фронт `apps/web-client` — Next.js, не Nest. Mini App `apps/telegram-mini-app` — Vite + React, не Nest.
 - Публичный API — только GraphQL-резолверы gateway. Исключения REST: OAuth на gateway, webhook-и payments (`/webhooks/stripe`, `/webhooks/paypal` на payments) и Telegram webhook (`/webhooks/telegram` на сервисе telegram, не на gateway).
 - Синхронно — gRPC, асинхронно — RabbitMQ.
 - У каждого сервиса своя Prisma-БД (логическая БД в одном Postgres).
@@ -311,7 +329,8 @@ Webhook HTTP (не GraphQL, не gateway):
 - `pnpm run start:all:prod` — prod-сборка без `.d.ts`/`.js.map`, затем весь стек из `dist/`
 - `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` / `pnpm run start:telegram` — по отдельности (watch)
 - `pnpm run start:web` — Next.js на порту 4000 (`apps/web-client`)
-- `pnpm run ngrok:dev` — туннель ngrok (отдельный терминал, не входит в `start:all`): порт = аргумент CLI / `PORT` / 3000
+- `pnpm run start:telegram-mini` — Vite Mini App на порту 4001 (`apps/telegram-mini-app`), в `start:all` не входит
+- `pnpm run ngrok:dev` — туннель ngrok (отдельный терминал, не входит в `start:all`): порт = аргумент CLI / `PORT` / 3000; для Mini App — `-- 4001`
 - `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:files:prod` / `pnpm run start:payments:prod` / `pnpm run start:telegram:prod` / `pnpm run start:web:prod` — по отдельности из сборки
 - `pnpm run prisma:generate` — клиенты users, gateway, files и payments
 - `pnpm run prisma:migrate` — миграции БД `users`
@@ -321,5 +340,8 @@ Webhook HTTP (не GraphQL, не gateway):
 - `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` / `pnpm run build:telegram` — с sourceMap
 - `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` — без `.d.ts` и `.js.map`
 - `pnpm run build:web` — сборка Next.js
+- `pnpm run build:telegram-mini` — сборка Mini App
 - `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда
 - `pnpm run lint:web` — ESLint `apps/web-client`
+- `pnpm run lint:telegram-mini` — ESLint `apps/telegram-mini-app`
+- `pnpm run format:web` / `pnpm run format:telegram-mini` — Prettier фронтов

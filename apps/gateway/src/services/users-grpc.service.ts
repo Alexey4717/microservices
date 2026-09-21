@@ -21,6 +21,7 @@ import type {
   GetMeByTelegramRequest,
   GetMeRequest,
   LoginRequest,
+  LoginWithTelegramRequest,
   LogoutRequest,
   OauthUpsertRequest,
   RefreshRequest,
@@ -34,6 +35,10 @@ const USERS_READ_TIMEOUT_MS = 2000;
 interface AuthGrpcClient {
   register(data: RegisterRequest, metadata: Metadata): Observable<AuthResponse>;
   login(data: LoginRequest, metadata: Metadata): Observable<AuthResponse>;
+  loginWithTelegram(
+    data: LoginWithTelegramRequest,
+    metadata: Metadata,
+  ): Observable<AuthResponse>;
   oauthUpsert(
     data: OauthUpsertRequest,
     metadata: Metadata,
@@ -82,6 +87,15 @@ export class UsersGrpcService implements OnModuleInit {
   login(data: LoginRequest, internalToken: string): Promise<AuthResponse> {
     return this.callGraphql(() =>
       this.auth.login(data, createInternalMetadata(internalToken)),
+    );
+  }
+
+  loginWithTelegram(
+    data: LoginWithTelegramRequest,
+    internalToken: string,
+  ): Promise<AuthResponse> {
+    return this.callGraphql(() =>
+      this.auth.loginWithTelegram(data, createInternalMetadata(internalToken)),
     );
   }
 

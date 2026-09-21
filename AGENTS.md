@@ -1,6 +1,6 @@
 # Инструкции для агентов
 
-Монорепозиторий NestJS: публичный GraphQL на `apps/gateway`, доменные сервисы в `apps/*`, контракты в `libs/proto`, общее — в `libs/common`. Фронт — Next.js в `apps/web-client` (pnpm workspace-пакет, не Nest-приложение).
+Монорепозиторий NestJS: публичный GraphQL на `apps/gateway`, доменные сервисы в `apps/*`, контракты в `libs/proto`, общее — в `libs/common`. Фронт — Next.js в `apps/web-client` (pnpm workspace-пакет, не Nest-приложение). Telegram Mini App — Vite + React в `apps/telegram-mini-app` (тоже pnpm workspace-пакет, не Nest).
 
 ## Команды
 
@@ -32,7 +32,9 @@ pnpm run start:all
 
 Фронт (не Nest, не через `nest generate`, не в `nest-cli.json`): пакет `apps/web-client`, запуск из корня `pnpm run start:web` (порт **4000**; 3000-е оставлены серверам: gateway 3000, mailer 3001). В `start:all` не входит. Линт фронта: `pnpm run lint:web`. Формат: `pnpm run format:web`. Корневые `pnpm lint` / `format` / vitest `apps/web-client` не трогают. Из web-client не импортировать `@libs/*`.
 
-Если порты 3000 / 3001 / 3002 / 3003 / 3004 / 4000 / 50051 / 50052 / 50053 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` или процессы на этих портах вручную.
+Telegram Mini App (не Nest, не Next, не в `nest-cli.json`): пакет `apps/telegram-mini-app` (имя `telegram-mini-app`), Vite + React, порт **4001**. Запуск `pnpm run start:telegram-mini`. В `start:all` не входит. GraphQL — относительный `/graphql` (Vite проксирует на gateway `:3000`). Линт: `pnpm run lint:telegram-mini`. Формат: `pnpm run format:telegram-mini`. Из Mini App не импортировать `@libs/*`.
+
+Если порты 3000 / 3001 / 3002 / 3003 / 3004 / 4000 / 4001 / 50051 / 50052 / 50053 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
 
 ## Архитектура
 
@@ -45,7 +47,7 @@ pnpm run start:all
 - Не читать и не коммитить `.env`, `dev.env`, `config.json`, `dev.example.env`, `config.example.json`. Шаблон — `.env.example`.
 - Документация для пользователя — на русском.
 - Runtime — CommonJS; относительные импорты без расширений файлов.
-- Из Nest-приложений импортировать libs как `@libs/common` / `@libs/proto`, не `../../../libs`. `apps/web-client` в `@libs/*` не ходит.
+- Из Nest-приложений импортировать libs как `@libs/common` / `@libs/proto`, не `../../../libs`. `apps/web-client` и `apps/telegram-mini-app` в `@libs/*` не ходят.
 
 ## Проверка
 

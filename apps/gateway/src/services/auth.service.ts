@@ -46,6 +46,15 @@ export class AuthService {
     return result;
   }
 
+  async loginWithTelegram(initData: string): Promise<AuthResponse> {
+    const result = await this.usersGrpc.loginWithTelegram(
+      { initData },
+      this.internalToken(),
+    );
+    await this.writeThrough(result.user);
+    return result;
+  }
+
   async refresh(refreshToken: string): Promise<AuthResponse> {
     const result = await this.usersGrpc.refresh(
       { refreshToken },

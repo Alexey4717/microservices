@@ -1,12 +1,14 @@
 packages:
   - 'libs/*'
   - 'apps/web-client'
+  - 'apps/telegram-mini-app'
 
 allowBuilds:
   '@apollo/protobufjs': true
   '@prisma/client': true
   '@prisma/engines': true
   bcrypt: true
+  esbuild: true
   ngrok: true
   prisma: true
   protobufjs: true

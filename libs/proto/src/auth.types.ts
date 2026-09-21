@@ -32,6 +32,10 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface LoginWithTelegramRequest {
+  initData: string;
+}
+
 export interface OauthUpsertRequest {
   provider: string;
   providerAccountId: string;

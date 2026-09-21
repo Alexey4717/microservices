@@ -18,6 +18,7 @@ describe('AuthService', () => {
     getMe: vi.fn(),
     updateMe: vi.fn(),
     createTelegramLinkToken: vi.fn(),
+    loginWithTelegram: vi.fn(),
   };
   const filesGrpc = {
     uploadFile: vi.fn(),
@@ -168,6 +169,35 @@ describe('AuthService', () => {
         INTERNAL_TOKEN,
         'u1',
       );
+    });
+  });
+
+  describe('loginWithTelegram', () => {
+    it('проксирует initData в users gRPC и пишет проекцию', async () => {
+      const user = {
+        id: 'u1',
+        email: 'a@example.com',
+        name: 'Ann',
+        avatarUrl: '',
+        accountTier: 'BASE',
+      };
+      usersGrpc.loginWithTelegram.mockResolvedValue({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        user,
+      });
+
+      await expect(
+        authService.loginWithTelegram('query_id=1&hash=abc'),
+      ).resolves.toMatchObject({
+        accessToken: 'access',
+        user: { id: 'u1' },
+      });
+      expect(usersGrpc.loginWithTelegram).toHaveBeenCalledWith(
+        { initData: 'query_id=1&hash=abc' },
+        INTERNAL_TOKEN,
+      );
+      expect(userProjection.upsertFromProfile).toHaveBeenCalledWith(user);
     });
   });
 });

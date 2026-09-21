@@ -37,6 +37,10 @@ import type {
   UserResponse,
 } from '@libs/proto';
 
+import {
+  type TelegramWebAppInitDataRequest,
+  parseTelegramWebAppUserId,
+} from '../helpers/telegram-webapp-init-data';
 import { PrismaService } from './prisma.service';
 
 const BCRYPT_ROUNDS = 10;
@@ -102,6 +106,18 @@ export class AuthService {
     this.emitAuthenticated(user.id, user.email, 'password');
     const tokens = await this.issueTokens(user.id, user.email);
     return { ...tokens, user: toUserResponse(user) };
+  }
+
+  async loginWithTelegram({
+    initData,
+  }: TelegramWebAppInitDataRequest): Promise<AuthResponse> {
+    const botToken =
+      this.configService.getOrThrow<string>('TELEGRAM_BOT_TOKEN');
+    const telegramId = parseTelegramWebAppUserId(initData, botToken);
+    const user = await this.getMeByTelegram({ telegramId });
+    this.emitAuthenticated(user.id, user.email, 'oauth');
+    const tokens = await this.issueTokens(user.id, user.email);
+    return { ...tokens, user };
   }
 
   async oauthUpsert(data: OauthUpsertRequest): Promise<AuthResponse> {

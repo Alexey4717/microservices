@@ -13,6 +13,7 @@ import type {
   GetMeByTelegramRequest,
   GetMeRequest,
   LoginRequest,
+  LoginWithTelegramRequest,
   LogoutRequest,
   OauthUpsertRequest,
   RefreshRequest,
@@ -38,6 +39,11 @@ export class AuthController {
   @GrpcMethod(AUTH_SERVICE_NAME, 'Login')
   login(data: LoginRequest): Promise<AuthResponse> {
     return this.authService.login(data);
+  }
+
+  @GrpcMethod(AUTH_SERVICE_NAME, 'LoginWithTelegram')
+  loginWithTelegram(data: LoginWithTelegramRequest): Promise<AuthResponse> {
+    return this.authService.loginWithTelegram(data);
   }
 
   @GrpcMethod(AUTH_SERVICE_NAME, 'OauthUpsert')

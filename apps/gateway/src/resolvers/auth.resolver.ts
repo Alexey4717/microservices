@@ -45,6 +45,16 @@ export class AuthResolver {
   }
 
   @Mutation(() => AuthPayload)
+  async loginWithTelegram(
+    @Args('initData', { type: () => String }) initData: string,
+    @Context() context: GqlContext,
+  ): Promise<AuthPayload> {
+    const result = await this.authService.loginWithTelegram(initData);
+    this.writeRefreshCookie(context, result.refreshToken);
+    return toAuthPayload(result);
+  }
+
+  @Mutation(() => AuthPayload)
   async refresh(
     @Args('input', { type: () => RefreshInput, nullable: true })
     input: RefreshInput | undefined,

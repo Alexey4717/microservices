@@ -12,12 +12,14 @@
 pnpm run start:gateway
 ```
 
-Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`. Нужны `GATEWAY_DATABASE_URL` и `RABBITMQ_URL`. CORS: `CORS_ORIGIN` (по умолчанию `http://localhost:4000` для `apps/web-client`), с `credentials: true`, чтобы браузер мог принять cookie сессии.
+Порт: `3000` (`PORT` в `.env`). GraphQL Playground в development: `/graphql`. Нужны `GATEWAY_DATABASE_URL` и `RABBITMQ_URL`. CORS: `CORS_ORIGIN` (по умолчанию `http://localhost:4000` для `apps/web-client`) плюс origin `TELEGRAM_MINI_APP_URL`, если задан. `credentials: true`, чтобы браузер мог принять cookie сессии. Return URL Stripe/PayPal по-прежнему считаются из `CORS_ORIGIN`, не из Mini App.
 
 ## GraphQL
 
-Мутации: `register`, `login`, `refresh`, `logout`, `updateMe`, `uploadAvatar`.  
+Мутации: `register`, `login`, `loginWithTelegram`, `refresh`, `logout`, `updateMe`, `uploadAvatar`.  
 Запрос: `me` — только с `Authorization: Bearer`, иначе 401. Если `users` временно недоступен, `me` отдаёт проекцию при уже записанном профиле.
+
+`loginWithTelegram(initData: String!)` — публичный вход Mini App. Gateway проксирует `initData` в users gRPC; токен бота на gateway не кладётся. Cookie refresh пишется как у `login`.
 
 `updateMe(input: UpdateMeInput!)` меняет `name` и/или `avatarUrl` текущего пользователя (id из JWT). `uploadAvatar(file: Upload!)` — multipart, лимит 2MB; затем gateway ставит `avatarUrl` через `UpdateMe`. Пример curl — в корневом README. Нужны `FILES_GRPC_URL` и `USERS_GRPC_URL`.
 
@@ -29,7 +31,7 @@ pnpm run start:gateway
 
 `telegramLinked: TelegramLinkedPayload` (`{ ok: Boolean! }`). JWT как у `me` (`Authorization: Bearer`); событие только своему user id из токена, клиентский user id не принимается.
 
-Транспорт — **graphql-sse**, distinct connections (GET/POST `/graphql` с `Accept: text/event-stream`), не WebSocket `graphql-ws` и не отдельный REST `/sse`. Nest GraphQL 14 из коробки даёт только `graphql-ws`; SSE подключён рядом с Apollo на том же `/graphql`. CORS: `CORS_ORIGIN` + credentials, заголовок `Last-Event-ID` разрешён.
+Транспорт — **graphql-sse**, distinct connections (GET/POST `/graphql` с `Accept: text/event-stream`), не WebSocket `graphql-ws` и не отдельный REST `/sse`. Nest GraphQL 14 из коробки даёт только `graphql-ws`; SSE подключён рядом с Apollo на том же `/graphql`. CORS: `CORS_ORIGIN` (+ origin Mini App) + credentials, заголовок `Last-Event-ID` разрешён.
 
 Сигнал приходит из RabbitMQ `user.telegram.updated` (очередь `gateway.user-projections`, binding `user.#`) в in-process PubSub. Клиент по событию заново запрашивает `me`.
 

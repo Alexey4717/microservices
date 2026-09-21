@@ -2,9 +2,13 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type { Request, Response } from 'express';
-import { Bot, webhookCallback } from 'grammy';
+import { Bot, type Context, webhookCallback } from 'grammy';
 
-import { TelegramStartService } from './telegram-start.service';
+import { TELEGRAM_KEYBOARD_TEXTS } from '../helpers/telegram-mini-app';
+import {
+  type TelegramBotMessage,
+  TelegramStartService,
+} from './telegram-start.service';
 
 type WebhookHandler = (
   req: Request,
@@ -36,8 +40,19 @@ export class TelegramBotService implements OnModuleInit {
     this.bot.command('start', async (ctx) => {
       const telegramId = ctx.from?.id != null ? String(ctx.from.id) : '';
       const payload = typeof ctx.match === 'string' ? ctx.match : '';
-      const text = await this.telegramStart.handleStart(telegramId, payload);
-      await ctx.reply(text);
+      const messages = await this.telegramStart.handleStart(
+        telegramId,
+        payload,
+      );
+      await this.replyMessages(ctx, messages);
+    });
+    this.bot.hears(TELEGRAM_KEYBOARD_TEXTS.myVideos, async (ctx) => {
+      const telegramId = ctx.from?.id != null ? String(ctx.from.id) : '';
+      const messages = await this.telegramStart.handleMyVideos(telegramId);
+      await this.replyMessages(ctx, messages);
+    });
+    this.bot.hears(TELEGRAM_KEYBOARD_TEXTS.howToLink, async (ctx) => {
+      await this.replyMessages(ctx, this.telegramStart.handleHowToLink());
     });
 
     this.webhookHandler = webhookCallback(this.bot, 'express', {
@@ -76,6 +91,18 @@ export class TelegramBotService implements OnModuleInit {
       if (!res.headersSent) {
         res.status(500).end();
       }
+    }
+  }
+
+  private async replyMessages(
+    ctx: Pick<Context, 'reply'>,
+    messages: TelegramBotMessage[],
+  ): Promise<void> {
+    for (const message of messages) {
+      await ctx.reply(
+        message.text,
+        message.replyMarkup ? { reply_markup: message.replyMarkup } : undefined,
+      );
     }
   }
 }

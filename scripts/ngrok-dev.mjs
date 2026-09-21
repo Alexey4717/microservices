@@ -13,6 +13,7 @@ const cliPort = process.argv.slice(2).find((arg) => /^\d+$/.test(arg));
 const gatewayPort = process.env.PORT || '3000';
 const paymentsPort = process.env.PAYMENTS_PORT || '3003';
 const telegramPort = process.env.TELEGRAM_PORT || '3004';
+const miniAppPort = '4001';
 const port = cliPort || gatewayPort;
 const upstream = `127.0.0.1:${port}`;
 const token = (process.env.NGROK_AUTHTOKEN ?? '').trim();
@@ -66,12 +67,18 @@ function hintForPort(publicUrl) {
   if (port === telegramPort) {
     return `Telegram webhook: ${publicUrl}/webhooks/telegram`;
   }
+  if (port === miniAppPort) {
+    return `Mini App: ${publicUrl}\nGraphQL proxy: ${publicUrl}/graphql\nTELEGRAM_MINI_APP_URL=${publicUrl}`;
+  }
   return '';
 }
 
 function listenHint() {
   if (port === telegramPort) {
     return 'Сначала запустите telegram: pnpm run start:telegram (или start:all).';
+  }
+  if (port === miniAppPort) {
+    return 'Сначала запустите Mini App: pnpm run start:telegram-mini.';
   }
   if (port === paymentsPort) {
     return 'Сначала запустите payments: pnpm run start:payments (или start:all).';

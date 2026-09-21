@@ -33,6 +33,9 @@ export class UsersEnvironmentVariables {
   @IsString()
   INTERNAL_SERVICE_TOKEN!: string;
 
+  @IsString()
+  TELEGRAM_BOT_TOKEN!: string;
+
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -130,6 +133,10 @@ export class GatewayEnvironmentVariables {
   @IsOptional()
   @IsString()
   TELEGRAM_BOT_USERNAME?: string;
+
+  @IsOptional()
+  @IsString()
+  TELEGRAM_MINI_APP_URL?: string;
 }
 
 export function validateGatewayEnv(
@@ -386,6 +393,10 @@ export class TelegramEnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  TELEGRAM_MINI_APP_URL?: string;
+
+  @IsOptional()
+  @IsString()
   TELEGRAM_HOST?: string;
 
   @IsOptional()
@@ -409,6 +420,7 @@ export function validateTelegramEnv(
   const normalized = blankToUndefined(config, [
     'TELEGRAM_BOT_USERNAME',
     'TELEGRAM_WEBHOOK_URL',
+    'TELEGRAM_MINI_APP_URL',
     'TELEGRAM_HOST',
   ]);
   const validated = plainToInstance(TelegramEnvironmentVariables, normalized, {

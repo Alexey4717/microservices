@@ -15,6 +15,7 @@ export default tseslint.config(
       'apps/**/prisma/generated/**',
       '**/prisma.config.ts',
       'apps/web-client/**',
+      'apps/telegram-mini-app/**',
     ],
   },
   eslint.configs.recommended,

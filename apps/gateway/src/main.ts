@@ -8,6 +8,7 @@ import { graphqlUploadExpress } from 'graphql-upload-ts';
 import { gatewayUserProjectionsOptions } from '@libs/common';
 
 import { AppModule } from './app.module';
+import { resolveGatewayCorsOrigins } from './helpers/cors-origins';
 import { registerGraphqlSse } from './helpers/register-graphql-sse';
 
 async function bootstrap() {
@@ -33,7 +34,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.enableCors({
-    origin: configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:4000',
+    origin: resolveGatewayCorsOrigins(
+      configService.get<string>('CORS_ORIGIN'),
+      configService.get<string>('TELEGRAM_MINI_APP_URL'),
+    ),
     credentials: true,
     allowedHeaders: [
       'Authorization',
