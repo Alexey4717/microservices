@@ -16,7 +16,7 @@ pnpm run start:files
 
 gRPC: `127.0.0.1:50052` (не `0.0.0.0`). Health: `http://127.0.0.1:3002/health`.
 
-MinIO API: `http://localhost:9000`. Консоль: [http://localhost:9001](http://localhost:9001) (логин/пароль локально: `minioadmin` / `minioadmin`, см. `.env.example`). Образы в compose — `quay.io/minio/minio` и `quay.io/minio/mc` (Docker Hub `minio/minio` без логина часто недоступен). Бакет `avatars` создаёт sidecar `minio-init` (анонимное скачивание + CORS для `http://localhost:4000` и `http://localhost:3000`).
+MinIO API: `http://localhost:9000`. Консоль: [http://localhost:9001](http://localhost:9001) (логин/пароль локально: `minioadmin` / `minioadmin`, см. `.env.example`). Образы MinIO и `mc` Compose собирает из `docker/minio` (бинарники последнего релиза на GitHub: с Docker Hub и Quay их анонимно уже не скачать). Бакет `avatars` создаёт sidecar `minio-init` (анонимное скачивание + CORS для `http://localhost:4000` и `http://localhost:3000`).
 
 Если том Postgres уже существовал, `init.sql` не выполнится повторно. Создайте БД вручную:
 

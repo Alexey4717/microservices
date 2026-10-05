@@ -30,8 +30,15 @@ services:
       retries: 10
 
   minio:
-    image: quay.io/minio/minio
-    command: server /data --console-address ":9001"
+    build:
+      context: ./docker/minio
+      args:
+        BIN: minio
+        VERSION: RELEASE.2025-09-07T16-13-09Z
+        KEEP_CURL: '1'
+    image: microservices-minio:2025.09.07
+    pull_policy: build
+    command: ['minio', 'server', '/data', '--console-address', ':9001']
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -49,7 +56,13 @@ services:
       start_period: 10s
 
   minio-init:
-    image: quay.io/minio/mc
+    build:
+      context: ./docker/minio
+      args:
+        BIN: mc
+        VERSION: RELEASE.2025-08-13T08-35-41Z
+    image: microservices-mc:2025.08.13
+    pull_policy: build
     depends_on:
       - minio
     volumes:
