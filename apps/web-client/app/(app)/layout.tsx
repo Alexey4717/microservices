@@ -4,6 +4,7 @@ import { type ReactNode, Suspense } from 'react';
 import { logoutAction } from '@/lib/auth/actions';
 import { getSession, sessionDisplayName } from '@/lib/auth/session';
 
+import { AiAssistantWidget } from './ai-assistant-widget';
 import { HeaderUser } from './header-user';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -18,6 +19,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <Link className="hover:underline" href="/videos" prefetch={false}>
               Видео
             </Link>
+            <Link
+              className="hover:underline"
+              href="/ai-assistant"
+              prefetch={false}
+            >
+              ИИ-ассистент
+            </Link>
             <Link className="hover:underline" href="/profile" prefetch={false}>
               Профиль
             </Link>
@@ -27,11 +35,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Suspense>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-8 pb-24">
         {children}
       </main>
+      <Suspense fallback={null}>
+        <AiAssistantWidgetGate />
+      </Suspense>
     </div>
   );
+}
+
+async function AiAssistantWidgetGate() {
+  const session = await getSession();
+  if (!session) {
+    return null;
+  }
+
+  return <AiAssistantWidget accessToken={session.accessToken} />;
 }
 
 async function UserSessionMenu() {

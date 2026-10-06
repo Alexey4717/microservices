@@ -124,6 +124,57 @@ export const MY_PAYMENTS_QUERY = gql`
   }
 `;
 
+export const AI_CONVERSATIONS_QUERY = gql`
+  query AiConversations {
+    aiConversations {
+      id
+      title
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const AI_CONVERSATION_QUERY = gql`
+  query AiConversation($id: ID!) {
+    aiConversation(id: $id) {
+      id
+      title
+      createdAt
+      updatedAt
+      messages {
+        id
+        role
+        content
+        toolName
+        createdAt
+      }
+    }
+  }
+`;
+
+export const CREATE_AI_CONVERSATION_MUTATION = gql`
+  mutation CreateAiConversation {
+    createAiConversation {
+      id
+      title
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const AI_ASSISTANT_REPLY_SUBSCRIPTION = gql`
+  subscription AiAssistantReply($conversationId: ID!, $content: String!) {
+    aiAssistantReply(conversationId: $conversationId, content: $content) {
+      conversationId
+      messageId
+      delta
+      done
+    }
+  }
+`;
+
 export const GET_PAYMENT_QUERY = gql`
   query GetPayment($id: ID!) {
     payment(id: $id) {

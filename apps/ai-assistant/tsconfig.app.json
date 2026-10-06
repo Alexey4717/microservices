@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "rootDir": "../..",
+    "outDir": "../../dist",
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "../../",
+    "paths": {
+      "@libs/common": ["libs/common/src/index.ts"],
+      "@libs/common/*": ["libs/common/src/*"],
+      "@libs/proto": ["libs/proto/src/index.ts"],
+      "@libs/proto/*": ["libs/proto/src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "../../libs/common/src/**/*",
+    "../../libs/proto/src/**/*"
+  ],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

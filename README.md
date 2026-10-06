@@ -1,13 +1,13 @@
 # Микросервисный монорепозиторий NestJS
 
-Публичный API — GraphQL на `gateway`. Сервис `users` доступен только по gRPC (localhost) и публикует события в RabbitMQ. Сервис `files` хранит аватары в MinIO и метаданные в PostgreSQL. Сервис `payments` создаёт checkout Stripe/PayPal и принимает webhook-и провайдеров. Сервис `telegram` принимает webhook Telegram и привязывает бота к существующему аккаунту через gRPC `users`. Сервис `mailer` слушает `user.created` и отправляет письма (без gRPC и без БД). Gateway хранит только read-model публичного профиля (не source of truth).
+Публичный API — GraphQL на `gateway`. Сервис `users` доступен только по gRPC (localhost) и публикует события в RabbitMQ. Сервис `files` хранит аватары в MinIO и метаданные в PostgreSQL. Сервис `payments` создаёт checkout Stripe/PayPal и принимает webhook-и провайдеров. Сервис `ai-assistant` ведёт диалоги с моделью (gRPC server stream, в браузере — graphql-sse). Сервис `telegram` принимает webhook Telegram и привязывает бота к существующему аккаунту через gRPC `users`. Сервис `mailer` слушает `user.created` и отправляет письма (без gRPC и без БД). Gateway хранит только read-model публичного профиля (не source of truth).
 
 ## Стек
 
 - NestJS 12 (монорепозиторий), pnpm, ESLint
 - GraphQL (Apollo, code-first) на gateway; подписки — graphql-sse (SSE), не WebSocket
-- gRPC (`libs/proto/src/auth.proto`, `libs/proto/src/files.proto`, `libs/proto/src/payments.proto`) — `users`, `files` и `payments`
-- Prisma + PostgreSQL: логические БД `users` (источник истины), `files` (метаданные загрузок), `payments` (платежи) и `gateway` (проекция профиля)
+- gRPC (`libs/proto/src/auth.proto`, `libs/proto/src/files.proto`, `libs/proto/src/payments.proto`, `libs/proto/src/ai-assistant.proto`) — `users`, `files`, `payments` и `ai-assistant`
+- Prisma + PostgreSQL: логические БД `users` (источник истины), `files` (метаданные загрузок), `payments` (платежи), `ai_assistant` (диалоги) и `gateway` (проекция профиля)
 - MinIO (S3) — бакет `avatars`, локально порты 9000/9001
 - RabbitMQ: topic-exchange `users.events` (`user.created`, `user.updated`, `user.authenticated`, `user.telegram.updated`) и `payments.events` (`payment.completed`, `payment.failed`, `payment.canceled`)
 - nodemailer (`mailer`) — welcome-письмо при регистрации
@@ -19,6 +19,7 @@ apps/gateway      — публичный GraphQL + OAuth HTTP + проекция
 apps/users        — gRPC-сервис пользователей (Prisma) + consumer payment.completed
 apps/files        — gRPC-сервис файлов (Prisma + MinIO)
 apps/payments     — gRPC checkout + HTTP webhook Stripe/PayPal (Prisma)
+apps/ai-assistant — gRPC чат с моделью, server stream (Prisma, БД `ai_assistant`)
 apps/telegram     — HTTP webhook Telegram + gRPC-клиент к users (без своей БД)
 apps/mailer       — consumer RabbitMQ, SMTP (nodemailer)
 apps/web-client   — Next.js (браузерный клиент к GraphQL gateway)
@@ -45,6 +46,7 @@ MinIO и клиент `mc` при этом собираются локально
 docker compose exec postgres psql -U postgres -c "CREATE DATABASE gateway;"
 docker compose exec postgres psql -U postgres -c "CREATE DATABASE files;"
 docker compose exec postgres psql -U postgres -c "CREATE DATABASE payments;"
+docker compose exec postgres psql -U postgres -c "CREATE DATABASE ai_assistant;"
 ```
 
 4. Примените миграции Prisma:
@@ -55,6 +57,7 @@ pnpm run prisma:migrate
 pnpm run prisma:migrate:gateway
 pnpm run prisma:migrate:files
 pnpm run prisma:migrate:payments
+pnpm run prisma:migrate:ai-assistant
 ```
 
 5. Запустите все сервисы одной командой:
@@ -63,13 +66,13 @@ pnpm run prisma:migrate:payments
 pnpm run start:all
 ```
 
-`start:all` и `start:all:dev` поднимают `users`, `mailer`, `files`, `payments`, `telegram` и `gateway` параллельно через [concurrently](https://github.com/open-cli-tools/concurrently) (`pnpm run start:users` / `start:mailer` / `start:files` / `start:payments` / `start:telegram` / `start:gateway`). Префиксы логов: `users`, `mailer`, `files`, `payments`, `telegram`, `gateway`. Падение одного процесса остальные не гасит. Ctrl+C останавливает всех детей. Для собранного режима: `pnpm run start:all:prod` (сначала `build:*:prod` без `.d.ts`/`.js.map`, затем процессы из `dist/`). Docker Compose — Postgres, RabbitMQ и MinIO, не Node-процессы.
+`start:all` и `start:all:dev` поднимают `users`, `mailer`, `files`, `payments`, `telegram`, `ai-assistant` и `gateway` параллельно через [concurrently](https://github.com/open-cli-tools/concurrently) (`pnpm run start:users` / `start:mailer` / `start:files` / `start:payments` / `start:telegram` / `start:ai-assistant` / `start:gateway`). Префиксы логов: `users`, `mailer`, `files`, `payments`, `telegram`, `ai-assistant`, `gateway`. Падение одного процесса остальные не гасит. Ctrl+C останавливает всех детей. Для собранного режима: `pnpm run start:all:prod` (сначала `build:*:prod` без `.d.ts`/`.js.map`, затем процессы из `dist/`). Docker Compose — Postgres, RabbitMQ и MinIO, не Node-процессы.
 
 Новый сервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и ещё одна команда в `concurrently` в `start:all` / `start:all:prod`.
 
-Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 4000 / 4001 / 50051 / 50052 / 50053 заняты) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
+Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 50051 / 50052 / 50053 / 50054 заняты) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
 
-По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит).
+По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram`, `pnpm run start:ai-assistant` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит).
 
 Публичный HTTPS-туннель ngrok **не** стартует вместе со стеком. Скрипт поднимает **пакетный** `ngrok` из `node_modules`, а не системный агент: глобальный `ngrok config` ему не подходит, нужен `NGROK_AUTHTOKEN` в `.env` (см. `.env.example`). В отдельном терминале:
 
@@ -96,10 +99,12 @@ pnpm run ngrok:dev -- 4001
 | Files health       | `http://127.0.0.1:3002/health`  | `FILES_HOST`:`FILES_PORT` (по умолчанию localhost), внутренний HTTP                         |
 | Payments health    | `http://127.0.0.1:3003/health`  | `PAYMENTS_HOST`:`PAYMENTS_PORT` (по умолчанию localhost), webhook HTTP                      |
 | Telegram health    | `http://127.0.0.1:3004/health`  | `TELEGRAM_HOST`:`TELEGRAM_PORT` (по умолчанию localhost), webhook HTTP                      |
+| AI assistant health | `http://127.0.0.1:3005/health` | `AI_ASSISTANT_HOST`:`AI_ASSISTANT_PORT` (по умолчанию localhost), внутренний HTTP            |
 | Users gRPC         | `127.0.0.1:50051`               | Только localhost, не публиковать                                                            |
 | Files gRPC         | `127.0.0.1:50052`               | Только localhost, не публиковать                                                            |
 | Payments gRPC      | `127.0.0.1:50053`               | Только localhost, не публиковать                                                            |
-| PostgreSQL         | `localhost:5433`                | БД `users`, `gateway`, `files` и `payments` (порт хоста 5433, чтобы не пересечься с локальным Postgres) |
+| AI assistant gRPC  | `127.0.0.1:50054`               | Только localhost, не публиковать                                                            |
+| PostgreSQL         | `localhost:5433`                | БД `users`, `gateway`, `files`, `payments` и `ai_assistant` (порт хоста 5433, чтобы не пересечься с локальным Postgres) |
 | MinIO API          | `http://localhost:9000`         | S3-совместимое хранилище, бакет `avatars`                                                   |
 | MinIO Console      | `http://localhost:9001`         | UI MinIO (`minioadmin` / `minioadmin` локально)                                             |
 | RabbitMQ           | `localhost:5672`                | AMQP                                                                                        |
@@ -327,20 +332,21 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 
 ## Скрипты
 
-- `pnpm run start:all` / `pnpm run start:all:dev` — бэкенд-стек в watch (concurrently): users, mailer, files, payments, telegram, gateway
+- `pnpm run start:all` / `pnpm run start:all:dev` — бэкенд-стек в watch (concurrently): users, mailer, files, payments, telegram, ai-assistant, gateway
 - `pnpm run start:all:prod` — prod-сборка без `.d.ts`/`.js.map`, затем весь стек из `dist/`
-- `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` / `pnpm run start:telegram` — по отдельности (watch)
+- `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` / `pnpm run start:telegram` / `pnpm run start:ai-assistant` — по отдельности (watch)
 - `pnpm run start:web` — Next.js на порту 4000 (`apps/web-client`)
 - `pnpm run start:telegram-mini` — Vite Mini App на порту 4001 (`apps/telegram-mini-app`), в `start:all` не входит
 - `pnpm run ngrok:dev` — туннель ngrok (отдельный терминал, не входит в `start:all`): порт = аргумент CLI / `PORT` / 3000; для Mini App — `-- 4001`
-- `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:files:prod` / `pnpm run start:payments:prod` / `pnpm run start:telegram:prod` / `pnpm run start:web:prod` — по отдельности из сборки
-- `pnpm run prisma:generate` — клиенты users, gateway, files и payments
+- `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:files:prod` / `pnpm run start:payments:prod` / `pnpm run start:telegram:prod` / `pnpm run start:ai-assistant:prod` / `pnpm run start:web:prod` — по отдельности из сборки
+- `pnpm run prisma:generate` — клиенты users, gateway, files, payments и ai-assistant
 - `pnpm run prisma:migrate` — миграции БД `users`
 - `pnpm run prisma:migrate:gateway` — миграции БД `gateway`
 - `pnpm run prisma:migrate:files` — миграции БД `files`
 - `pnpm run prisma:migrate:payments` — миграции БД `payments`
-- `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` / `pnpm run build:telegram` — с sourceMap
-- `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` — без `.d.ts` и `.js.map`
+- `pnpm run prisma:migrate:ai-assistant` — миграции БД `ai_assistant`
+- `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` / `pnpm run build:telegram` / `pnpm run build:ai-assistant` — с sourceMap
+- `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` / `pnpm run build:ai-assistant:prod` — без `.d.ts` и `.js.map`
 - `pnpm run build:web` — сборка Next.js
 - `pnpm run build:telegram-mini` — сборка Mini App
 - `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда

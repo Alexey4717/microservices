@@ -26,7 +26,7 @@ pnpm exec nest generate library <name> --prefix app
 pnpm run start:all
 ```
 
-`start:all` / `start:all:dev` запускают `users`, `mailer`, `files`, `payments`, `telegram` и `gateway` параллельно через `concurrently` (`pnpm run start:<name>`). Падение одного процесса остальные не убивает (`--kill-others-on-fail false`). Ctrl+C останавливает всех детей. `start:all:prod` сначала собирает `build:*:prod` (без `.d.ts` / `.js.map`), затем те же процессы из `dist/`.
+`start:all` / `start:all:dev` запускают `users`, `mailer`, `files`, `payments`, `telegram`, `ai-assistant` и `gateway` параллельно через `concurrently` (`pnpm run start:<name>`). Падение одного процесса остальные не убивает (`--kill-others-on-fail false`). Ctrl+C останавливает всех детей. `start:all:prod` сначала собирает `build:*:prod` (без `.d.ts` / `.js.map`), затем те же процессы из `dist/`.
 
 Новый микросервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и строка в `concurrently` в `start:all` / `start:all:prod`. Отдельный оркестратор и `wait-on` не используются.
 
@@ -34,7 +34,7 @@ pnpm run start:all
 
 Telegram Mini App (не Nest, не Next, не в `nest-cli.json`): пакет `apps/telegram-mini-app` (имя `telegram-mini-app`), Vite + React, порт **4001**. Запуск `pnpm run start:telegram-mini`. В `start:all` не входит. GraphQL — относительный `/graphql` (Vite проксирует на gateway `:3000`). Линт: `pnpm run lint:telegram-mini`. Формат: `pnpm run format:telegram-mini`. Из Mini App не импортировать `@libs/*`.
 
-Если порты 3000 / 3001 / 3002 / 3003 / 3004 / 4000 / 4001 / 50051 / 50052 / 50053 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
+Если порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 50051 / 50052 / 50053 / 50054 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
 
 ## Архитектура
 
@@ -57,6 +57,7 @@ pnpm run build:gateway
 pnpm run build:users
 pnpm run build:files
 pnpm run build:payments
+pnpm run build:ai-assistant
 ```
 
 Перед сдачей UI/HTTP — `pnpm run start:all`, затем GraphQL register → login → me.

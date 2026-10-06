@@ -94,6 +94,9 @@ export class GatewayEnvironmentVariables {
   PAYMENTS_GRPC_URL!: string;
 
   @IsString()
+  AI_ASSISTANT_GRPC_URL!: string;
+
+  @IsString()
   GATEWAY_DATABASE_URL!: string;
 
   @IsString()
@@ -440,4 +443,77 @@ export function validateTelegramEnv(
   }
 
   return normalized;
+}
+
+export class AiAssistantEnvironmentVariables {
+  @IsOptional()
+  @IsString()
+  NODE_ENV?: string;
+
+  @IsString()
+  AI_ASSISTANT_DATABASE_URL!: string;
+
+  @IsString()
+  AI_ASSISTANT_GRPC_URL!: string;
+
+  @IsOptional()
+  @IsString()
+  AI_ASSISTANT_HOST?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  AI_ASSISTANT_PORT?: number;
+
+  @IsString()
+  LLM_BASE_URL!: string;
+
+  @IsString()
+  LLM_API_KEY!: string;
+
+  @IsString()
+  LLM_MODEL!: string;
+
+  @IsInt()
+  @Min(1)
+  LLM_CONTEXT_TOKENS!: number;
+
+  @IsInt()
+  @Min(1)
+  LLM_MAX_OUTPUT_TOKENS!: number;
+
+  @IsInt()
+  @Min(0)
+  AI_ASSISTANT_DAILY_TOKEN_LIMIT!: number;
+
+  @IsString()
+  USERS_GRPC_URL!: string;
+
+  @IsString()
+  PAYMENTS_GRPC_URL!: string;
+
+  @IsString()
+  INTERNAL_SERVICE_TOKEN!: string;
+}
+
+export function validateAiAssistantEnv(
+  config: Record<string, unknown>,
+): Record<string, unknown> {
+  const validated = plainToInstance(AiAssistantEnvironmentVariables, config, {
+    enableImplicitConversion: true,
+  });
+  const errors = validateSync(validated, {
+    skipMissingProperties: false,
+    forbidUnknownValues: false,
+  });
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Некорректный .env для ai-assistant: ${errors
+        .map((error) => Object.values(error.constraints ?? {}).join(', '))
+        .join('; ')}`,
+    );
+  }
+
+  return validated as unknown as Record<string, unknown>;
 }

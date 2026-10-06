@@ -12,11 +12,13 @@ import { validateGatewayEnv } from '@libs/common';
 import { AuthController } from './controllers/auth.controller';
 import { UserProjectionController } from './controllers/user-projection.controller';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
+import { AiAssistantGrpcModule } from './grpc/ai-assistant-grpc.module';
 import { FilesGrpcModule } from './grpc/files-grpc.module';
 import { PaymentsGrpcModule } from './grpc/payments-grpc.module';
 import { UsersGrpcModule } from './grpc/users-grpc.module';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { AiAssistantResolver } from './resolvers/ai-assistant.resolver';
 import { AuthResolver } from './resolvers/auth.resolver';
 import { PaymentsResolver } from './resolvers/payments.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
@@ -61,6 +63,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     UsersGrpcModule,
     FilesGrpcModule,
     PaymentsGrpcModule,
+    AiAssistantGrpcModule,
   ],
   controllers: [AuthController, UserProjectionController],
   providers: [
@@ -75,6 +78,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthResolver,
     UsersResolver,
     PaymentsResolver,
+    AiAssistantResolver,
     JwtStrategy,
     GoogleStrategy,
     GithubStrategy,

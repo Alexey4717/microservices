@@ -48,6 +48,32 @@ export type PaymentModel = {
   createdAt: string;
 };
 
+export type AiConversation = {
+  id: string;
+  title?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AiMessage = {
+  id: string;
+  role: string;
+  content: string;
+  toolName?: string | null;
+  createdAt: string;
+};
+
+export type AiConversationDetail = AiConversation & {
+  messages: AiMessage[];
+};
+
+export type AiAssistantReply = {
+  conversationId: string;
+  messageId: string;
+  delta: string;
+  done: boolean;
+};
+
 export type GraphQLErrorShape = {
   message: string;
   extensions?: {

@@ -13,6 +13,15 @@
   "monorepo": true,
   "root": "apps/gateway",
   "projects": {
+    "ai-assistant": {
+      "type": "application",
+      "root": "apps/ai-assistant",
+      "entryFile": "main",
+      "sourceRoot": "apps/ai-assistant/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ai-assistant/tsconfig.app.json"
+      }
+    },
     "common": {
       "type": "library",
       "root": "libs/common",

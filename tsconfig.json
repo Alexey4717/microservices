@@ -23,10 +23,18 @@
       "node"
     ],
     "paths": {
-      "@libs/common": ["libs/common/src/index.ts"],
-      "@libs/common/*": ["libs/common/src/*"],
-      "@libs/proto": ["libs/proto/src/index.ts"],
-      "@libs/proto/*": ["libs/proto/src/*"]
+      "@libs/common": [
+        "libs/common/src/index.ts"
+      ],
+      "@libs/common/*": [
+        "libs/common/src/*"
+      ],
+      "@libs/proto": [
+        "libs/proto/src/index.ts"
+      ],
+      "@libs/proto/*": [
+        "libs/proto/src/*"
+      ]
     }
   },
   "files": [],
@@ -54,6 +62,9 @@
     },
     {
       "path": "./libs/proto/tsconfig.lib.json"
+    },
+    {
+      "path": "./apps/ai-assistant/tsconfig.app.json"
     }
   ]
 }

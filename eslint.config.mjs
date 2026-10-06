@@ -29,6 +29,7 @@ export default tseslint.config(
       'apps/files/**/*.ts',
       'apps/payments/**/*.ts',
       'apps/telegram/**/*.ts',
+      'apps/ai-assistant/**/*.ts',
       'libs/**/*.ts',
     ],
     languageOptions: {

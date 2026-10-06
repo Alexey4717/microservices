@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { AI_ASSISTANT_PROTO_FILE } from './ai-assistant.constants';
 import { AUTH_PROTO_FILE } from './auth.constants';
 import { FILES_PROTO_FILE } from './files.constants';
 import { PAYMENTS_PROTO_FILE } from './payments.constants';
@@ -24,6 +25,10 @@ function resolveProtoPath(filename: string): string {
   }
 
   return found;
+}
+
+export function getAiAssistantProtoPath(): string {
+  return resolveProtoPath(AI_ASSISTANT_PROTO_FILE);
 }
 
 export function getAuthProtoPath(): string {
