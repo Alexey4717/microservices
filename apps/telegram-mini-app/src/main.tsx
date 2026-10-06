@@ -1,6 +1,9 @@
+import { ApolloProvider } from '@apollo/client/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
+
+import { apolloClient } from './apollo';
 
 import { App } from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -41,7 +44,9 @@ const tree = initData ? (
 try {
   createRoot(root).render(
     <StrictMode>
-      <ErrorBoundary>{tree}</ErrorBoundary>
+      <ApolloProvider client={apolloClient}>
+        <ErrorBoundary>{tree}</ErrorBoundary>
+      </ApolloProvider>
     </StrictMode>,
   );
 } catch (caught) {

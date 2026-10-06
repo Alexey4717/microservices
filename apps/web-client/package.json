@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@apollo/client": "^4.2.12",
+    "@libs/graphql": "workspace:*",
     "@apollo/client-integration-nextjs": "^0.14.5",
     "graphql": "^16.14.2",
     "graphql-sse": "^2.6.1",

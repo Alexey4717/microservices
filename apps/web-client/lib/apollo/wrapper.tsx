@@ -1,6 +1,6 @@
 'use client';
 
-import { HttpLink } from '@apollo/client';
+import { ApolloLink, HttpLink } from '@apollo/client';
 import {
   ApolloClient,
   ApolloNextAppProvider,
@@ -10,6 +10,8 @@ import { SetContextLink } from '@apollo/client/link/context';
 import type { ReactNode } from 'react';
 
 import { getGraphqlUrl } from '@/lib/graphql/url';
+
+import { GraphqlSseLink } from './sse-link';
 
 type ApolloWrapperProps = {
   children: ReactNode;
@@ -27,6 +29,8 @@ export function ApolloWrapper({ children, accessToken }: ApolloWrapperProps) {
       },
     });
 
+    const sseLink = new GraphqlSseLink({ url: getGraphqlUrl() });
+
     const authLink = new SetContextLink((prevContext) => {
       if (!accessToken) {
         return prevContext;
@@ -42,7 +46,13 @@ export function ApolloWrapper({ children, accessToken }: ApolloWrapperProps) {
 
     return new ApolloClient({
       cache: new InMemoryCache(),
-      link: authLink.concat(httpLink),
+      link: authLink.concat(
+        ApolloLink.split(
+          (operation) => operation.operationType === 'subscription',
+          sseLink,
+          httpLink,
+        ),
+      ),
     });
   }
 

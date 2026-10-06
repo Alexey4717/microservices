@@ -1,61 +1,51 @@
 import { cookies } from 'next/headers';
 
 import {
-  type AuthPayload,
-  type GraphQLResponse,
-  toAccountTier,
-} from '@/lib/graphql/types';
+  LoginDocument,
+  type LoginMutation,
+} from '@libs/graphql/operations/auth/login.generated';
+import {
+  LogoutDocument,
+  type LogoutMutation,
+} from '@libs/graphql/operations/auth/logout.generated';
+import {
+  RegisterDocument,
+  type RegisterMutation,
+} from '@libs/graphql/operations/auth/register.generated';
+
+import { toAccountTier } from '@/lib/auth/auth-user';
+import type { GraphQLResponse } from '@/lib/graphql/response';
 
 import { REFRESH_COOKIE_NAME } from './constants';
 import { postGatewayGraphQL, refreshCookieHeader } from './gateway-request';
 import { firstGraphQLErrorMessage, isUnauthenticated } from './rotate-session';
 import { applySetCookiesFromResponse } from './set-cookie';
 
-const LOGIN_QUERY = `
-  mutation Login($input: LoginInput!) {
-    login(input: $input) {
-      accessToken
-      refreshToken
-      user { id email name avatarUrl accountTier }
-    }
-  }
-`;
-
-const REGISTER_QUERY = `
-  mutation Register($input: RegisterInput!) {
-    register(input: $input) {
-      accessToken
-      refreshToken
-      user { id email name avatarUrl accountTier }
-    }
-  }
-`;
-
-const LOGOUT_QUERY = `
-  mutation Logout($input: LogoutInput) {
-    logout(input: $input)
-  }
-`;
-
 export async function loginWithPassword(
   email: string,
   password: string,
-): Promise<AuthPayload & { refreshToken?: string }> {
-  return mutateAuth('login', LOGIN_QUERY, { input: { email, password } });
+): Promise<LoginMutation['login']> {
+  const response = await postGatewayGraphQL(LoginDocument, {
+    input: { email, password },
+  });
+  const json = (await response.json()) as GraphQLResponse<LoginMutation>;
+  return acceptAuthPayload(response, json, json.data?.login);
 }
 
 export async function registerWithPassword(input: {
   email: string;
   password: string;
   name?: string;
-}): Promise<AuthPayload & { refreshToken?: string }> {
-  return mutateAuth('register', REGISTER_QUERY, {
+}): Promise<RegisterMutation['register']> {
+  const response = await postGatewayGraphQL(RegisterDocument, {
     input: {
       email: input.email,
       password: input.password,
       name: input.name,
     },
   });
+  const json = (await response.json()) as GraphQLResponse<RegisterMutation>;
+  return acceptAuthPayload(response, json, json.data?.register);
 }
 
 export async function logoutAtGateway(refreshToken?: string): Promise<void> {
@@ -64,13 +54,13 @@ export async function logoutAtGateway(refreshToken?: string): Promise<void> {
     : await currentRefreshCookieHeader();
 
   const response = await postGatewayGraphQL(
-    LOGOUT_QUERY,
+    LogoutDocument,
     { input: {} },
     { cookie },
   );
   await applySetCookiesFromResponse(response);
 
-  const json = (await response.json()) as GraphQLResponse<{ logout?: boolean }>;
+  const json = (await response.json()) as GraphQLResponse<LogoutMutation>;
   if (json.data?.logout) {
     return;
   }
@@ -82,21 +72,15 @@ export async function logoutAtGateway(refreshToken?: string): Promise<void> {
   }
 }
 
-async function mutateAuth(
-  field: 'login' | 'register',
-  document: Parameters<typeof postGatewayGraphQL>[0],
-  variables: Record<string, unknown>,
-): Promise<AuthPayload & { refreshToken?: string }> {
-  const response = await postGatewayGraphQL(document, variables);
-  const json = (await response.json()) as GraphQLResponse<
-    Record<typeof field, (AuthPayload & { refreshToken?: string }) | undefined>
-  >;
-  const payload = json.data?.[field];
+async function acceptAuthPayload(
+  response: Response,
+  json: GraphQLResponse<unknown>,
+  payload: LoginMutation['login'] | RegisterMutation['register'] | undefined,
+): Promise<LoginMutation['login']> {
   if (payload?.accessToken && payload.user) {
     await applySetCookiesFromResponse(response, payload.refreshToken);
     return {
-      accessToken: payload.accessToken,
-      refreshToken: payload.refreshToken,
+      ...payload,
       user: {
         ...payload.user,
         accountTier: toAccountTier(payload.user.accountTier),

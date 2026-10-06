@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 
 const graphqlProxy = {
   '/graphql': {
@@ -14,6 +14,9 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 4001,
     strictPort: true,
+    fs: {
+      allow: [searchForWorkspaceRoot(import.meta.dirname)],
+    },
     // ngrok hostname changes every restart; Vite 6+ otherwise 403s Telegram WebView.
     allowedHosts: true,
     proxy: graphqlProxy,

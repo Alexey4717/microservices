@@ -1,13 +1,23 @@
 'use client';
 
+import {
+  useLazyQuery,
+  useMutation,
+  useSubscription,
+} from '@apollo/client/react';
 import { useEffect, useRef, useState } from 'react';
 
+import { AiAssistantReplyDocument } from '@libs/graphql/operations/ai-assistant/ai-assistant-reply.generated';
 import {
-  createAiConversation,
-  getAiConversation,
-  subscribeAiAssistantReply,
-} from '@/lib/graphql/ai-assistant';
-import type { AiConversation, AiMessage } from '@/lib/graphql/types';
+  AiConversationDocument,
+  type AiConversationQuery,
+} from '@libs/graphql/operations/ai-assistant/ai-conversation.generated';
+import type { AiConversationsQuery } from '@libs/graphql/operations/ai-assistant/ai-conversations.generated';
+import { CreateAiConversationDocument } from '@libs/graphql/operations/ai-assistant/create-ai-conversation.generated';
+
+type ConversationItem = AiConversationsQuery['aiConversations'][number];
+type ConversationMessage =
+  AiConversationQuery['aiConversation']['messages'][number];
 
 type ChatLine = {
   id: string;
@@ -15,53 +25,110 @@ type ChatLine = {
   content: string;
 };
 
+type ReplyInput = {
+  conversationId: string;
+  content: string;
+};
+
 type AiAssistantChatProps = {
-  accessToken: string;
-  initialConversations: AiConversation[];
+  initialConversations: ConversationItem[];
   variant?: 'page' | 'panel';
 };
 
 export function AiAssistantChat({
-  accessToken,
   initialConversations,
   variant = 'page',
 }: AiAssistantChatProps) {
   const [conversations, setConversations] =
-    useState<AiConversation[]>(initialConversations);
+    useState<ConversationItem[]>(initialConversations);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatLine[]>([]);
   const [draft, setDraft] = useState('');
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [replyInput, setReplyInput] = useState<ReplyInput | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const stopRef = useRef<(() => void) | null>(null);
+  const replyInputRef = useRef(replyInput);
+
+  const [loadConversation, conversationQuery] = useLazyQuery(
+    AiConversationDocument,
+    { fetchPolicy: 'network-only' },
+  );
+  const [createConversation, createResult] = useMutation(
+    CreateAiConversationDocument,
+  );
+  const reply = useSubscription(AiAssistantReplyDocument, {
+    skip: replyInput === null,
+    variables: replyInput ?? { conversationId: '', content: '' },
+    onData: ({ data }) => {
+      const event = data.data?.aiAssistantReply;
+      if (!event || (!event.delta && !event.done)) {
+        return;
+      }
+      setMessages((current) =>
+        appendDelta(current, event.messageId, event.delta),
+      );
+    },
+    onComplete: () => {
+      const id = replyInputRef.current?.conversationId;
+      if (!id) {
+        return;
+      }
+      void loadConversation({ variables: { id } }).then((result) => {
+        const detail = result.data?.aiConversation;
+        if (!detail) {
+          return;
+        }
+        setMessages(visibleMessages(detail.messages));
+        setConversations((current) =>
+          current.map((item) =>
+            item.id === detail.id ? { ...item, title: detail.title } : item,
+          ),
+        );
+      });
+    },
+  });
+
+  const creating = createResult.loading;
+  const opening = conversationQuery.loading;
+  const streaming =
+    replyInput !== null &&
+    !reply.error &&
+    reply.data?.aiAssistantReply?.done !== true;
+  const errorText =
+    conversationQuery.error?.message ||
+    createResult.error?.message ||
+    reply.error?.message ||
+    null;
+
+  useEffect(() => {
+    replyInputRef.current = replyInput;
+  }, [replyInput]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
   }, [messages]);
 
-  useEffect(
-    () => () => {
-      stopRef.current?.();
-    },
-    [],
-  );
-
   async function openConversation(id: string) {
-    setError(null);
+    setReplyInput(null);
     setActiveId(id);
-    const detail = await getAiConversation({ id, accessToken });
+    const result = await loadConversation({ variables: { id } });
+    const detail = result.data?.aiConversation;
+    if (!detail) {
+      return;
+    }
     setMessages(visibleMessages(detail.messages));
     setConversations((current) =>
       current.map((item) =>
-        item.id === detail.id ? { ...item, ...detail } : item,
+        item.id === detail.id ? { ...item, title: detail.title } : item,
       ),
     );
   }
 
-  async function startConversation() {
-    setError(null);
-    const created = await createAiConversation({ accessToken });
+  async function startConversation(): Promise<string | null> {
+    const result = await createConversation().catch(() => null);
+    const created = result?.data?.createAiConversation;
+    if (!created) {
+      return null;
+    }
     setConversations((current) => [created, ...current]);
     setActiveId(created.id);
     setMessages([]);
@@ -70,24 +137,18 @@ export function AiAssistantChat({
 
   async function sendMessage() {
     const content = draft.trim();
-    if (!content || pending) {
+    if (!content || creating || streaming) {
       return;
     }
 
-    setPending(true);
-    setError(null);
     setDraft('');
-
     let conversationId = activeId;
-    try {
+    if (!conversationId) {
+      conversationId = await startConversation();
       if (!conversationId) {
-        conversationId = await startConversation();
+        setDraft(content);
+        return;
       }
-    } catch (sendError) {
-      setPending(false);
-      setDraft(content);
-      setError(readError(sendError));
-      return;
     }
 
     const userLine: ChatLine = {
@@ -103,38 +164,7 @@ export function AiAssistantChat({
           : item,
       ),
     );
-
-    stopRef.current?.();
-    stopRef.current = subscribeAiAssistantReply({
-      accessToken,
-      conversationId,
-      content,
-      onReply: (event) => {
-        if (!event.delta && !event.done) {
-          return;
-        }
-        setMessages((current) =>
-          appendDelta(current, event.messageId, event.delta),
-        );
-      },
-      onError: (message) => {
-        setError(message);
-        setPending(false);
-      },
-      onComplete: () => {
-        setPending(false);
-        void getAiConversation({ id: conversationId, accessToken })
-          .then((detail) => {
-            setMessages(visibleMessages(detail.messages));
-            setConversations((current) =>
-              current.map((item) =>
-                item.id === detail.id ? { ...item, title: detail.title } : item,
-              ),
-            );
-          })
-          .catch(() => undefined);
-      },
-    });
+    setReplyInput({ conversationId, content });
   }
 
   const conversationItems =
@@ -150,12 +180,14 @@ export function AiAssistantChat({
                 ? 'bg-zinc-100 font-medium dark:bg-zinc-800'
                 : ''
             }`}
+            aria-busy={
+              opening && conversationQuery.variables?.id === conversation.id
+                ? true
+                : undefined
+            }
+            disabled={opening}
             onClick={() => {
-              void openConversation(conversation.id).catch(
-                (openError: unknown) => {
-                  setError(readError(openError));
-                },
-              );
+              void openConversation(conversation.id);
             }}
           >
             {conversation.title?.trim() || 'Новый диалог'}
@@ -186,7 +218,7 @@ export function AiAssistantChat({
                 : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
             }`}
           >
-            {message.content || (pending ? '…' : '')}
+            {message.content || (streaming ? '…' : '')}
           </article>
         ))
       )}
@@ -194,15 +226,16 @@ export function AiAssistantChat({
     </div>
   );
 
-  const errorLine = error ? (
+  const errorLine = errorText ? (
     <p className="shrink-0 px-4 text-sm text-red-600 dark:text-red-400">
-      {error}
+      {errorText}
     </p>
   ) : null;
 
   const composer = (
     <form
       className="flex shrink-0 gap-2 border-t border-zinc-200 p-3 dark:border-zinc-800"
+      aria-busy={streaming || creating || undefined}
       onSubmit={(event) => {
         event.preventDefault();
         void sendMessage();
@@ -217,7 +250,7 @@ export function AiAssistantChat({
         placeholder="Сообщение"
         value={draft}
         rows={2}
-        disabled={pending}
+        disabled={streaming || creating}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && !event.shiftKey) {
@@ -229,9 +262,9 @@ export function AiAssistantChat({
       <button
         type="submit"
         className="self-end rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        disabled={pending || draft.trim().length === 0}
+        disabled={streaming || creating || draft.trim().length === 0}
       >
-        {pending ? 'Отправка…' : 'Отправить'}
+        {streaming || creating ? 'Отправка…' : 'Отправить'}
       </button>
     </form>
   );
@@ -240,14 +273,13 @@ export function AiAssistantChat({
     <button
       type="button"
       className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-      disabled={pending}
+      disabled={creating || streaming}
+      aria-busy={creating || undefined}
       onClick={() => {
-        void startConversation().catch((startError: unknown) => {
-          setError(readError(startError));
-        });
+        void startConversation();
       }}
     >
-      Новый диалог
+      {creating ? 'Создаём…' : 'Новый диалог'}
     </button>
   );
 
@@ -289,7 +321,7 @@ export function AiAssistantChat({
   );
 }
 
-function visibleMessages(messages: AiMessage[]): ChatLine[] {
+function visibleMessages(messages: ConversationMessage[]): ChatLine[] {
   return messages.flatMap((message) => {
     if (message.role !== 'user' && message.role !== 'assistant') {
       return [];
@@ -326,11 +358,4 @@ function appendDelta(
   const current = next[index];
   next[index] = { ...current, content: current.content + delta };
   return next;
-}
-
-function readError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  return 'Не удалось выполнить запрос';
 }

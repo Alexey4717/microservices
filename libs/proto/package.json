@@ -2,6 +2,7 @@
   "name": "@libs/proto",
   "version": "0.0.1",
   "private": true,
+  "consumers": ["@apps/*"],
   "main": "./runtime.js",
   "types": "./src/index.ts",
   "exports": {

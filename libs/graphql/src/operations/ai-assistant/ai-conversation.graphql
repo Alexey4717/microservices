@@ -1,0 +1,15 @@
+query AiConversation($id: ID!) {
+  aiConversation(id: $id) {
+    id
+    title
+    createdAt
+    updatedAt
+    messages {
+      id
+      role
+      content
+      toolName
+      createdAt
+    }
+  }
+}

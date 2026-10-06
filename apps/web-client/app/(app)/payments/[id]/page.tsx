@@ -2,11 +2,11 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { GetPaymentDocument } from '@libs/graphql/operations/payments/get-payment.generated';
+
 import { query } from '@/lib/apollo/server';
 import { isPrefetchRequest } from '@/lib/auth/request-kind';
 import { getSession } from '@/lib/auth/session';
-import { GET_PAYMENT_QUERY } from '@/lib/graphql/documents';
-import type { PaymentModel } from '@/lib/graphql/types';
 
 import { PaymentOrder } from './payment-order';
 
@@ -24,8 +24,8 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
   }
 
   const { id } = await params;
-  const result = await query<{ payment: PaymentModel }>({
-    query: GET_PAYMENT_QUERY,
+  const result = await query({
+    query: GetPaymentDocument,
     variables: { id },
   }).catch(() => null);
 
@@ -34,7 +34,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
     return <PaymentNotFound />;
   }
 
-  return <PaymentOrder payment={payment} accessToken={session.accessToken} />;
+  return <PaymentOrder payment={payment} />;
 }
 
 function PaymentNotFound() {

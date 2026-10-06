@@ -26,6 +26,7 @@
     "build:ai-assistant:prod": "pnpm --filter @apps/ai-assistant run build:prod",
     "build:web": "pnpm --filter web-client build",
     "build:telegram-mini": "pnpm --filter telegram-mini-app build",
+    "codegen": "pnpm --filter @libs/graphql run codegen",
     "copy:proto": "node scripts/copy-proto.mjs",
     "deploy": "nest deploy",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",

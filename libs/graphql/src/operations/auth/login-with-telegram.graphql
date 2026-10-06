@@ -1,0 +1,9 @@
+mutation LoginWithTelegram($initData: String!) {
+  loginWithTelegram(initData: $initData) {
+    accessToken
+    refreshToken
+    user {
+      ...UserFields
+    }
+  }
+}

@@ -1,16 +1,14 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { MyPaymentsDocument } from '@libs/graphql/operations/payments/my-payments.generated';
+import { MeDocument } from '@libs/graphql/operations/user/me.generated';
+
 import { query } from '@/lib/apollo/server';
 import { rememberSessionUser } from '@/lib/auth/actions';
+import { toAccountTier } from '@/lib/auth/auth-user';
 import { isPrefetchRequest } from '@/lib/auth/request-kind';
 import { getSession } from '@/lib/auth/session';
-import { ME_QUERY, MY_PAYMENTS_QUERY } from '@/lib/graphql/documents';
-import {
-  type AuthUser,
-  type PaymentModel,
-  toAccountTier,
-} from '@/lib/graphql/types';
 
 import { AvatarUpload } from './avatar-upload';
 import { PaymentsList } from './payments-list';
@@ -27,10 +25,8 @@ export default async function ProfilePage() {
   }
 
   const [meResult, paymentsResult] = await Promise.all([
-    query<{ me: AuthUser }>({ query: ME_QUERY }).catch(() => null),
-    query<{ myPayments: PaymentModel[] }>({
-      query: MY_PAYMENTS_QUERY,
-    }).catch(() => null),
+    query({ query: MeDocument }).catch(() => null),
+    query({ query: MyPaymentsDocument }).catch(() => null),
   ]);
 
   let me = session.user;
@@ -82,11 +78,8 @@ export default async function ProfilePage() {
           </div>
         </dl>
       </div>
-      <TelegramLinkButton
-        accessToken={session.accessToken}
-        telegram={me.telegram}
-      />
-      <PremiumCheckout accessToken={session.accessToken} user={me} />
+      <TelegramLinkButton telegram={me.telegram} />
+      <PremiumCheckout user={me} />
       <PaymentsList payments={payments} />
     </section>
   );

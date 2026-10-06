@@ -1,0 +1,12 @@
+query MyPayments {
+  myPayments {
+    id
+    productCode
+    provider
+    status
+    amountMinor
+    currency
+    checkoutUrl
+    createdAt
+  }
+}

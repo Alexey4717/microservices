@@ -51,7 +51,7 @@ async function AiAssistantWidgetGate() {
     return null;
   }
 
-  return <AiAssistantWidget accessToken={session.accessToken} />;
+  return <AiAssistantWidget />;
 }
 
 async function UserSessionMenu() {

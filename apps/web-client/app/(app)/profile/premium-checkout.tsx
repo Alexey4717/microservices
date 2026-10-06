@@ -1,63 +1,45 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { CombinedGraphQLErrors } from '@apollo/client/errors';
+import { useMutation } from '@apollo/client/react';
+import { useId } from 'react';
 
-import { createCheckout, isCheckoutConflict } from '@/lib/graphql/checkout';
-import {
-  type AuthUser,
-  type PaymentProvider,
-  toAccountTier,
-} from '@/lib/graphql/types';
+import { CreateCheckoutDocument } from '@libs/graphql/operations/payments/create-checkout.generated';
+
+import { type AuthUser, toAccountTier } from '@/lib/auth/auth-user';
+import type { PaymentProvider } from '@/lib/graphql/payment-model';
 
 type PremiumCheckoutProps = {
-  accessToken: string;
   user: AuthUser;
 };
 
 const PREMIUM_PRICE_LABEL = '9,99\u00a0USD';
 
-export function PremiumCheckout({ accessToken, user }: PremiumCheckoutProps) {
+export function PremiumCheckout({ user }: PremiumCheckoutProps) {
   const statusId = useId();
   const errorId = useId();
-  const [pendingProvider, setPendingProvider] =
-    useState<PaymentProvider | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [alreadyPurchased, setAlreadyPurchased] = useState(false);
+  const [payWithStripe, stripe] = useMutation(CreateCheckoutDocument);
+  const [payWithPaypal, paypal] = useMutation(CreateCheckoutDocument);
 
   const accountTier = toAccountTier(user.accountTier);
   const isPremium = accountTier === 'PREMIUM';
+  const hookError = stripe.error ?? paypal.error;
+  const alreadyPurchased = isPremiumConflict(hookError);
   const hideBuyButtons = isPremium || alreadyPurchased;
-  const requesting = pendingProvider !== null;
+  const requesting = stripe.loading || paypal.loading;
 
   async function onPay(provider: PaymentProvider) {
     if (requesting) {
       return;
     }
 
-    setError(null);
-    setPendingProvider(provider);
-
-    try {
-      const payload = await createCheckout({ provider, accessToken });
-      window.location.assign(payload.checkoutUrl);
-    } catch (checkoutError) {
-      if (isCheckoutConflict(checkoutError)) {
-        setAlreadyPurchased(true);
-        setError(
-          checkoutError instanceof Error
-            ? checkoutError.message
-            : 'PREMIUM уже куплен',
-        );
-        return;
-      }
-
-      setError(
-        checkoutError instanceof Error
-          ? checkoutError.message
-          : 'Не удалось создать оплату. Попробуйте ещё раз.',
-      );
-    } finally {
-      setPendingProvider(null);
+    const pay = provider === 'STRIPE' ? payWithStripe : payWithPaypal;
+    const result = await pay({
+      variables: { input: { provider } },
+    }).catch(() => null);
+    const checkoutUrl = result?.data?.createCheckout?.checkoutUrl;
+    if (checkoutUrl) {
+      window.location.assign(checkoutUrl);
     }
   }
 
@@ -97,7 +79,7 @@ export function PremiumCheckout({ accessToken, user }: PremiumCheckoutProps) {
             }}
             className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:focus-visible:ring-zinc-100"
           >
-            {pendingProvider === 'STRIPE'
+            {stripe.loading
               ? 'Переходим к оплате…'
               : 'Оплатить картой (Stripe)'}
           </button>
@@ -109,7 +91,7 @@ export function PremiumCheckout({ accessToken, user }: PremiumCheckoutProps) {
             }}
             className="rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-100"
           >
-            {pendingProvider === 'PAYPAL' ? 'Переходим к оплате…' : 'PayPal'}
+            {paypal.loading ? 'Переходим к оплате…' : 'PayPal'}
           </button>
         </div>
       )}
@@ -124,16 +106,37 @@ export function PremiumCheckout({ accessToken, user }: PremiumCheckoutProps) {
         </p>
       ) : null}
 
-      {error && !alreadyPurchased ? (
+      {hookError && !alreadyPurchased ? (
         <p
           id={errorId}
           className="text-sm text-red-600 dark:text-red-400"
           role="alert"
           aria-live="polite"
         >
-          {error}
+          {hookError.message ||
+            'Не удалось создать оплату. Попробуйте ещё раз.'}
         </p>
       ) : null}
     </div>
   );
+}
+
+function isPremiumConflict(error: unknown): boolean {
+  if (!error) {
+    return false;
+  }
+  if (CombinedGraphQLErrors.is(error)) {
+    const graphQLError = error.errors[0];
+    const code = graphQLError?.extensions?.code;
+    const http = graphQLError?.extensions?.http;
+    const status =
+      typeof http === 'object' && http && 'status' in http
+        ? http.status
+        : undefined;
+    if (code === 'CONFLICT' || status === 409) {
+      return true;
+    }
+  }
+  const message = error instanceof Error ? error.message : '';
+  return /already purchased/i.test(message);
 }

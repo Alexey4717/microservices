@@ -1,6 +1,6 @@
 /**
  * MUST match `libs/common/src/avatar.ts`.
- * `apps/web-client` cannot import `@libs/*`.
+ * web-client не входит в consumers `@libs/common`, поэтому константа продублирована.
  */
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 

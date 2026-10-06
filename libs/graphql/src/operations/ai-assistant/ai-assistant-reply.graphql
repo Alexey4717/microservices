@@ -1,0 +1,8 @@
+subscription AiAssistantReply($conversationId: ID!, $content: String!) {
+  aiAssistantReply(conversationId: $conversationId, content: $content) {
+    conversationId
+    messageId
+    delta
+    done
+  }
+}

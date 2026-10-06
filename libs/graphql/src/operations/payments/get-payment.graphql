@@ -1,0 +1,12 @@
+query GetPayment($id: ID!) {
+  payment(id: $id) {
+    id
+    productCode
+    provider
+    status
+    amountMinor
+    currency
+    checkoutUrl
+    createdAt
+  }
+}

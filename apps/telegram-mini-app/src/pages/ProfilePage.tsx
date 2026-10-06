@@ -1,5 +1,8 @@
+import type { MeQuery } from '@libs/graphql/operations/user/me.generated';
+
 import { Avatar } from '../components/Avatar';
-import type { SessionUser } from '../graphql';
+
+type SessionUser = MeQuery['me'];
 
 function tierLabel(tier: SessionUser['accountTier']): string {
   return tier === 'PREMIUM' ? 'Премиум' : 'Базовый';

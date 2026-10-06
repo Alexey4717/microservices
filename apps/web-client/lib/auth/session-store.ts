@@ -1,4 +1,4 @@
-import type { AuthUser } from '@/lib/graphql/types';
+import type { AuthUser } from '@/lib/auth/auth-user';
 
 import { rotateRefreshToken } from './rotate-session';
 

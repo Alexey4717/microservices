@@ -1,0 +1,8 @@
+mutation CreateAiConversation {
+  createAiConversation {
+    id
+    title
+    createdAt
+    updatedAt
+  }
+}

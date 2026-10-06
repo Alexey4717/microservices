@@ -1,9 +1,10 @@
 import {
-  type AuthPayload,
-  type AuthUser,
-  type GraphQLResponse,
-  toAccountTier,
-} from '@/lib/graphql/types';
+  RefreshDocument,
+  type RefreshMutation,
+} from '@libs/graphql/operations/auth/refresh.generated';
+
+import { type AuthUser, toAccountTier } from '@/lib/auth/auth-user';
+import type { GraphQLResponse } from '@/lib/graphql/response';
 
 import { REFRESH_COOKIE_NAME } from './constants';
 import { postGatewayGraphQL, refreshCookieHeader } from './gateway-request';
@@ -44,29 +45,13 @@ export function isGatewayUnavailableError(error: unknown): boolean {
   return isFetchFailed(error);
 }
 
-const REFRESH_QUERY = `
-  mutation Refresh($input: RefreshInput) {
-    refresh(input: $input) {
-      accessToken
-      refreshToken
-      user {
-        id
-        email
-        name
-        avatarUrl
-        accountTier
-      }
-    }
-  }
-`;
-
 export async function rotateRefreshToken(
   refreshToken: string,
 ): Promise<RotateResult> {
   let response: Response;
   try {
     response = await postGatewayGraphQL(
-      REFRESH_QUERY,
+      RefreshDocument,
       { input: { refreshToken } },
       { cookie: refreshCookieHeader(refreshToken) },
     );
@@ -74,14 +59,10 @@ export async function rotateRefreshToken(
     throw toRotateError(error);
   }
 
-  let json: GraphQLResponse<{
-    refresh?: (AuthPayload & { refreshToken?: string }) | undefined;
-  }>;
+  let json: GraphQLResponse<RefreshMutation>;
 
   try {
-    json = (await response.json()) as GraphQLResponse<{
-      refresh?: (AuthPayload & { refreshToken?: string }) | undefined;
-    }>;
+    json = (await response.json()) as GraphQLResponse<RefreshMutation>;
   } catch {
     throw new Error('Не удалось обновить сессию');
   }

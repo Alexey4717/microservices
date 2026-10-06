@@ -1,49 +1,30 @@
 'use client';
 
+import { useQuery } from '@apollo/client/react';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { listAiConversations } from '@/lib/graphql/ai-assistant';
-import type { AiConversation } from '@/lib/graphql/types';
+import { AiConversationsDocument } from '@libs/graphql/operations/ai-assistant/ai-conversations.generated';
 
 import { AiAssistantChat } from './ai-assistant/ai-assistant-chat';
 
-type AiAssistantWidgetProps = {
-  accessToken: string;
-};
-
-export function AiAssistantWidget({ accessToken }: AiAssistantWidgetProps) {
+export function AiAssistantWidget() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [engaged, setEngaged] = useState(false);
-  const [conversations, setConversations] = useState<AiConversation[] | null>(
-    null,
-  );
-  const [loadError, setLoadError] = useState<string | null>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const loadStarted = useRef(false);
   const focusClose = useRef(false);
   const restoreLauncherFocus = useRef(false);
 
   const onAssistantPage = isAssistantRoute(pathname);
   const showPanel = open && !onAssistantPage;
   const showButton = !open && !onAssistantPage;
-
-  const loadConversations = useCallback(async () => {
-    if (loadStarted.current) {
-      return;
-    }
-    loadStarted.current = true;
-    setLoadError(null);
-    try {
-      const items = await listAiConversations({ accessToken });
-      setConversations(items);
-    } catch (error: unknown) {
-      loadStarted.current = false;
-      setLoadError(readLoadError(error));
-    }
-  }, [accessToken]);
+  const conversationsQuery = useQuery(AiConversationsDocument, {
+    skip: !showPanel,
+  });
+  const conversations = conversationsQuery.data?.aiConversations;
+  const loadError = conversationsQuery.error;
 
   const closePanel = useCallback(() => {
     restoreLauncherFocus.current = true;
@@ -54,7 +35,6 @@ export function AiAssistantWidget({ accessToken }: AiAssistantWidgetProps) {
     focusClose.current = true;
     setEngaged(true);
     setOpen(true);
-    void loadConversations();
   }
 
   useEffect(() => {
@@ -101,6 +81,9 @@ export function AiAssistantWidget({ accessToken }: AiAssistantWidgetProps) {
           aria-label="Чат с ИИ-ассистентом"
           aria-hidden={showPanel ? undefined : true}
           inert={showPanel ? undefined : true}
+          aria-busy={
+            conversationsQuery.loading && !conversations ? true : undefined
+          }
         >
           <header className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
             <h2 className="text-sm font-semibold">ИИ-ассистент</h2>
@@ -118,20 +101,21 @@ export function AiAssistantWidget({ accessToken }: AiAssistantWidgetProps) {
             {conversations ? (
               <AiAssistantChat
                 variant="panel"
-                accessToken={accessToken}
                 initialConversations={conversations}
               />
             ) : (
               <div className="flex flex-1 flex-col gap-3 p-4">
                 <p className="text-sm text-zinc-500">
-                  {loadError ?? 'Загрузка диалогов…'}
+                  {loadError
+                    ? loadError.message || 'Не удалось загрузить диалоги'
+                    : 'Загрузка диалогов…'}
                 </p>
                 {loadError ? (
                   <button
                     type="button"
                     className="self-start rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
                     onClick={() => {
-                      void loadConversations();
+                      void conversationsQuery.refetch();
                     }}
                   >
                     Повторить
@@ -159,11 +143,4 @@ export function AiAssistantWidget({ accessToken }: AiAssistantWidgetProps) {
 
 function isAssistantRoute(pathname: string): boolean {
   return pathname === '/ai-assistant' || pathname.startsWith('/ai-assistant/');
-}
-
-function readLoadError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  return 'Не удалось загрузить диалоги';
 }

@@ -3,9 +3,9 @@
 import Link from 'next/link';
 
 import { UserAvatar } from '@/app/(app)/user-avatar';
+import { type AuthUser, toAccountTier } from '@/lib/auth/auth-user';
 import { useClientUser } from '@/lib/auth/client-user';
 import { sessionDisplayName } from '@/lib/auth/session-user';
-import { type AuthUser, toAccountTier } from '@/lib/graphql/types';
 
 type HeaderUserProps = {
   user: AuthUser;

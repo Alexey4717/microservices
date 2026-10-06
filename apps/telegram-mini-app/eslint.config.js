@@ -4,6 +4,8 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+import { libsConsumersConfig } from '../../eslint/libs-consumers.mjs';
+
 export default tseslint.config(
   { ignores: ['dist', '*.d.ts'] },
   {
@@ -16,8 +18,10 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      ...libsConsumersConfig.plugins,
     },
     rules: {
+      ...libsConsumersConfig.rules,
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': [
         'warn',

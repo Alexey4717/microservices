@@ -1,6 +1,9 @@
 import { type DocumentNode, print } from 'graphql';
 
-import type { AuthUser, GraphQLResponse } from '@/lib/graphql/types';
+import type { UploadAvatarMutation } from '@libs/graphql/operations/user/upload-avatar.generated';
+
+import type { AuthUser } from '@/lib/auth/auth-user';
+import type { GraphQLResponse } from '@/lib/graphql/response';
 import { getGraphqlUrl } from '@/lib/graphql/url';
 
 const PREFLIGHT_HEADER = 'Apollo-Require-Preflight';
@@ -35,11 +38,9 @@ export async function uploadAvatarMultipart(options: {
     cache: 'no-store',
   });
 
-  let json: GraphQLResponse<{ uploadAvatar?: AuthUser }>;
+  let json: GraphQLResponse<UploadAvatarMutation>;
   try {
-    json = (await response.json()) as GraphQLResponse<{
-      uploadAvatar?: AuthUser;
-    }>;
+    json = (await response.json()) as GraphQLResponse<UploadAvatarMutation>;
   } catch {
     throw new Error('Не удалось загрузить аватар. Попробуйте ещё раз.');
   }

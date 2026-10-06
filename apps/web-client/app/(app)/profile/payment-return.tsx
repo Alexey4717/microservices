@@ -4,12 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { rememberSessionUser } from '@/lib/auth/actions';
-import { publishClientUser } from '@/lib/auth/client-user';
 import {
   type AccountTier,
   type AuthUser,
   toAccountTier,
-} from '@/lib/graphql/types';
+} from '@/lib/auth/auth-user';
+import { publishClientUser } from '@/lib/auth/client-user';
 
 type PaymentQuery = 'success' | 'cancel';
 

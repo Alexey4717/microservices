@@ -1,0 +1,8 @@
+mutation CreateCheckout($input: CreateCheckoutInput!) {
+  createCheckout(input: $input) {
+    paymentId
+    checkoutUrl
+    provider
+    status
+  }
+}

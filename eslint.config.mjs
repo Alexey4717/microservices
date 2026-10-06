@@ -4,6 +4,8 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+import { libsConsumersConfig } from './eslint/libs-consumers.mjs';
+
 export default tseslint.config(
   {
     ignores: [
@@ -12,6 +14,8 @@ export default tseslint.config(
       'coverage/**',
       '**/*.d.ts',
       '**/generated/**',
+      '**/*.generated.ts',
+      'libs/graphql/src/schema-types.ts',
       'apps/**/prisma/generated/**',
       '**/prisma.config.ts',
       'apps/web-client/**',
@@ -33,7 +37,9 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    plugins: libsConsumersConfig.plugins,
     rules: {
+      ...libsConsumersConfig.rules,
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',

@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { CombinedGraphQLErrors } from '@apollo/client/errors';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
+import { useEffect, useRef } from 'react';
 import {
   Navigate,
   Route,
@@ -7,15 +9,12 @@ import {
   useNavigate,
 } from 'react-router';
 
+import { LoginWithTelegramDocument } from '@libs/graphql/operations/auth/login-with-telegram.generated';
+import { MeDocument } from '@libs/graphql/operations/user/me.generated';
+
 import { rememberAccessToken } from './auth-session';
 import { BottomNav } from './components/BottomNav';
 import { GateScreen, LOADING_GATE_MESSAGE } from './components/GateScreen';
-import {
-  fetchMe,
-  GraphqlRequestError,
-  loginWithTelegram,
-  type SessionUser,
-} from './graphql';
 import { ProfilePage } from './pages/ProfilePage';
 import { VideosPage } from './pages/VideosPage';
 import {
@@ -54,58 +53,41 @@ function BackButtonSync() {
 }
 
 export function App() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const started = useRef(false);
+  const [loginWithTelegram, loginResult] = useMutation(
+    LoginWithTelegramDocument,
+  );
+  const [loadMe, meResult] = useLazyQuery(MeDocument);
 
   useEffect(() => {
     signalTelegramReady();
-    const initData = getInitData();
-    let cancelled = false;
-
-    async function signIn() {
-      try {
-        const session = await loginWithTelegram(initData);
-        rememberAccessToken(session.accessToken);
-        const profile = await fetchMe(session.accessToken);
-        if (!cancelled) {
-          setUser(profile);
-        }
-      } catch (caught) {
-        if (cancelled) {
-          return;
-        }
-        if (
-          caught instanceof GraphqlRequestError &&
-          caught.code === 'NOT_FOUND'
-        ) {
-          setError('Привяжите бота в профиле на сайте.');
-          return;
-        }
-        setError(
-          caught instanceof Error && caught.message.trim()
-            ? caught.message
-            : 'Не удалось войти. Откройте кабинет кнопкой под сообщением.',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    if (started.current) {
+      return;
     }
+    started.current = true;
+    void loginWithTelegram({ variables: { initData: getInitData() } });
+  }, [loginWithTelegram]);
 
-    void signIn();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  useEffect(() => {
+    const accessToken = loginResult.data?.loginWithTelegram.accessToken;
+    if (!accessToken || meResult.called) {
+      return;
+    }
+    rememberAccessToken(accessToken);
+    void loadMe();
+  }, [loadMe, loginResult.data, meResult.called]);
+
+  const user = meResult.data?.me;
+  const error = loginResult.error ?? meResult.error;
+  const message = gateMessage(error, meResult.called && !meResult.loading && !user);
+  const loading = !user && !message;
 
   if (loading) {
     return <GateScreen message={LOADING_GATE_MESSAGE} pending />;
   }
 
-  if (error || !user) {
-    return <GateScreen message={error ?? 'Не удалось загрузить профиль.'} />;
+  if (message || !user) {
+    return <GateScreen message={message ?? 'Не удалось загрузить профиль.'} />;
   }
 
   return (
@@ -119,4 +101,31 @@ export function App() {
       <BottomNav />
     </div>
   );
+}
+
+function gateMessage(
+  error: unknown,
+  emptyProfile: boolean,
+): string | null {
+  if (errorCode(error) === 'NOT_FOUND') {
+    return 'Привяжите бота в профиле на сайте.';
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  if (error) {
+    return 'Не удалось войти. Откройте кабинет кнопкой под сообщением.';
+  }
+  if (emptyProfile) {
+    return 'Не удалось загрузить профиль.';
+  }
+  return null;
+}
+
+function errorCode(error: unknown): string | undefined {
+  if (!CombinedGraphQLErrors.is(error)) {
+    return undefined;
+  }
+  const code = error.errors[0]?.extensions?.code;
+  return typeof code === 'string' ? code : undefined;
 }

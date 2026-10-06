@@ -1,6 +1,6 @@
 # Telegram Mini App
 
-Отдельный React SPA (Vite) для кабинета в Telegram Mini App. Это **не** Nest-приложение и **не** Next.js: пакет не входит в `nest-cli.json`, не импортирует `@libs/*` и ходит только в публичный GraphQL gateway.
+Отдельный React SPA (Vite) для кабинета в Telegram Mini App. Это **не** Nest-приложение и **не** Next.js: пакет не входит в `nest-cli.json`, из `@libs/*` импортирует только `@libs/graphql` (его `consumers`) и ходит только в публичный GraphQL gateway.
 
 Порт **4001** (`4000` занят `web-client`). В `start:all` не входит.
 

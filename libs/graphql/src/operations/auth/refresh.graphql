@@ -1,0 +1,9 @@
+mutation Refresh($input: RefreshInput) {
+  refresh(input: $input) {
+    accessToken
+    refreshToken
+    user {
+      ...UserFields
+    }
+  }
+}

@@ -12,6 +12,7 @@
         "!apps/web-client/**",
         "!apps/telegram-mini-app/**",
         "libs/**",
+        "!libs/graphql/**",
         "scripts/copy-proto.mjs",
         "scripts/clean-dist.mjs",
         "nest-cli.json",

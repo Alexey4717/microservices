@@ -1,0 +1,157 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+enum AccountTier {
+  BASE
+  PREMIUM
+}
+
+type AiAssistantReplyModel {
+  conversationId: ID!
+  delta: String!
+  done: Boolean!
+  messageId: ID!
+}
+
+type AiConversationDetailModel {
+  createdAt: String!
+  id: ID!
+  messages: [AiMessageModel!]!
+  title: String
+  updatedAt: String!
+}
+
+type AiConversationModel {
+  createdAt: String!
+  id: ID!
+  title: String
+  updatedAt: String!
+}
+
+type AiMessageModel {
+  content: String!
+  createdAt: String!
+  id: ID!
+  role: String!
+  toolName: String
+}
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: UserModel!
+}
+
+type CheckoutPayload {
+  checkoutUrl: String!
+  paymentId: String!
+  provider: PaymentProvider!
+  status: PaymentStatus!
+}
+
+input CreateCheckoutInput {
+  productCode: String
+  provider: PaymentProvider!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input LogoutInput {
+  refreshToken: String
+}
+
+type Mutation {
+  createAiConversation: AiConversationModel!
+  createCheckout(input: CreateCheckoutInput!): CheckoutPayload!
+  createTelegramLink: TelegramLink!
+  login(input: LoginInput!): AuthPayload!
+  loginWithTelegram(initData: String!): AuthPayload!
+  logout(input: LogoutInput): Boolean!
+  refresh(input: RefreshInput): AuthPayload!
+  register(input: RegisterInput!): AuthPayload!
+  updateMe(input: UpdateMeInput!): UserModel!
+  uploadAvatar(file: Upload!): UserModel!
+}
+
+type PaymentModel {
+  amountMinor: Int!
+  checkoutUrl: String
+  createdAt: String!
+  currency: String!
+  id: String!
+  productCode: String!
+  provider: PaymentProvider!
+  status: PaymentStatus!
+}
+
+enum PaymentProvider {
+  PAYPAL
+  STRIPE
+}
+
+enum PaymentStatus {
+  CANCELED
+  FAILED
+  PENDING
+  SUCCEEDED
+}
+
+type Query {
+  aiConversation(id: ID!): AiConversationDetailModel!
+  aiConversations: [AiConversationModel!]!
+  me: UserModel!
+  myPayments: [PaymentModel!]!
+  payment(id: ID!): PaymentModel!
+}
+
+input RefreshInput {
+  refreshToken: String
+}
+
+input RegisterInput {
+  email: String!
+  name: String
+  password: String!
+}
+
+type Subscription {
+  aiAssistantReply(content: String!, conversationId: ID!): AiAssistantReplyModel!
+  telegramLinked: TelegramLinkedPayload!
+}
+
+type TelegramLink {
+  url: String!
+}
+
+type TelegramLinkedPayload {
+  ok: Boolean!
+}
+
+type TelegramProfile {
+  firstName: String
+  photoUrl: String
+  userId: String!
+  userLastName: String
+  username: String
+}
+
+input UpdateMeInput {
+  avatarUrl: String
+  name: String
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+type UserModel {
+  accountTier: AccountTier!
+  avatarUrl: String
+  email: String!
+  id: String!
+  name: String
+  telegram: TelegramProfile
+}

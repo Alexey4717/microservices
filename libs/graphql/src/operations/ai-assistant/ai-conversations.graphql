@@ -1,0 +1,8 @@
+query AiConversations {
+  aiConversations {
+    id
+    title
+    createdAt
+    updatedAt
+  }
+}

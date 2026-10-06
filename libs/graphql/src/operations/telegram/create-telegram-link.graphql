@@ -1,0 +1,5 @@
+mutation CreateTelegramLink {
+  createTelegramLink {
+    url
+  }
+}

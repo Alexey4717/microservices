@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import type { AuthUser } from '@/lib/graphql/types';
+import type { AuthUser } from '@/lib/auth/auth-user';
 
 type Listener = (user: AuthUser) => void;
 

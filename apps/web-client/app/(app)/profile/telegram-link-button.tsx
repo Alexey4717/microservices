@@ -1,11 +1,13 @@
 'use client';
 
+import { useMutation, useSubscription } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId } from 'react';
 
-import { createTelegramLink } from '@/lib/graphql/telegram-link';
-import { subscribeTelegramLinked } from '@/lib/graphql/telegram-linked';
-import type { TelegramProfile } from '@/lib/graphql/types';
+import { CreateTelegramLinkDocument } from '@libs/graphql/operations/telegram/create-telegram-link.generated';
+import { TelegramLinkedDocument } from '@libs/graphql/operations/telegram/telegram-linked.generated';
+
+import type { AuthUser } from '@/lib/auth/auth-user';
 
 import { UserAvatar } from '../user-avatar';
 
@@ -13,22 +15,20 @@ const TELEGRAM_LINK_TTL_MINUTES = 10;
 
 const TELEGRAM_LINK_HINT = `Ссылка привязки действует ${TELEGRAM_LINK_TTL_MINUTES} минут. Если не успели нажать Start в Telegram, создайте новую в профиле. При повторном нажатии прежняя ссылка становится недействительной.`;
 
+type TelegramProfile = NonNullable<AuthUser['telegram']>;
+
 type TelegramLinkButtonProps = {
-  accessToken: string;
-  telegram?: TelegramProfile | null;
+  telegram?: AuthUser['telegram'];
 };
 
-export function TelegramLinkButton({
-  accessToken,
-  telegram,
-}: TelegramLinkButtonProps) {
+export function TelegramLinkButton({ telegram }: TelegramLinkButtonProps) {
   const linked = Boolean(telegram?.userId?.trim());
 
   if (linked && telegram) {
     return <LinkedTelegramCard telegram={telegram} />;
   }
 
-  return <BindTelegramCard accessToken={accessToken} />;
+  return <BindTelegramCard />;
 }
 
 function LinkedTelegramCard({ telegram }: { telegram: TelegramProfile }) {
@@ -64,18 +64,21 @@ function LinkedTelegramCard({ telegram }: { telegram: TelegramProfile }) {
   );
 }
 
-function BindTelegramCard({ accessToken }: { accessToken: string }) {
+function BindTelegramCard() {
   const router = useRouter();
   const statusId = useId();
   const errorId = useId();
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [createLink, { loading, error }] = useMutation(
+    CreateTelegramLinkDocument,
+  );
 
-  useEffect(() => {
-    return subscribeTelegramLinked(accessToken, () => {
-      router.refresh();
-    });
-  }, [accessToken, router]);
+  useSubscription(TelegramLinkedDocument, {
+    onData: ({ data }) => {
+      if (data.data?.telegramLinked?.ok) {
+        router.refresh();
+      }
+    },
+  });
 
   useEffect(() => {
     function onVisibility() {
@@ -91,31 +94,21 @@ function BindTelegramCard({ accessToken }: { accessToken: string }) {
   }, [router]);
 
   async function onLink() {
-    if (pending) {
+    if (loading) {
       return;
     }
 
-    setError(null);
-    setPending(true);
-
-    try {
-      const payload = await createTelegramLink({ accessToken });
-      window.open(payload.url, '_blank', 'noopener,noreferrer');
-    } catch (linkError) {
-      setError(
-        linkError instanceof Error
-          ? linkError.message
-          : 'Не удалось создать ссылку Telegram. Попробуйте ещё раз.',
-      );
-    } finally {
-      setPending(false);
+    const result = await createLink().catch(() => null);
+    const url = result?.data?.createTelegramLink?.url;
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   }
 
   return (
     <div
       className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 text-sm dark:border-zinc-800 dark:bg-zinc-900"
-      aria-busy={pending || undefined}
+      aria-busy={loading || undefined}
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
@@ -129,16 +122,16 @@ function BindTelegramCard({ accessToken }: { accessToken: string }) {
 
       <button
         type="button"
-        disabled={pending}
+        disabled={loading}
         onClick={() => {
           void onLink();
         }}
         className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:focus-visible:ring-zinc-100"
       >
-        {pending ? 'Открываем Telegram…' : 'Привязать Telegram'}
+        {loading ? 'Открываем Telegram…' : 'Привязать Telegram'}
       </button>
 
-      {pending ? (
+      {loading ? (
         <p
           id={statusId}
           className="text-zinc-600 dark:text-zinc-400"
@@ -155,7 +148,8 @@ function BindTelegramCard({ accessToken }: { accessToken: string }) {
           role="alert"
           aria-live="polite"
         >
-          {error}
+          {error.message ||
+            'Не удалось создать ссылку Telegram. Попробуйте ещё раз.'}
         </p>
       ) : null}
     </div>

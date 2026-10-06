@@ -3,16 +3,17 @@
 import { useRouter } from 'next/navigation';
 import { type ChangeEvent, useEffect, useId, useRef, useState } from 'react';
 
+import { UploadAvatarDocument } from '@libs/graphql/operations/user/upload-avatar.generated';
+
 import { rememberSessionUser } from '@/lib/auth/actions';
+import type { AuthUser } from '@/lib/auth/auth-user';
 import { publishClientUser } from '@/lib/auth/client-user';
 import {
   AVATAR_FILE_ACCEPT,
   avatarValidationMessage,
   validateAvatarFile,
 } from '@/lib/files/avatar';
-import { UPLOAD_AVATAR_MUTATION } from '@/lib/graphql/documents';
 import { uploadAvatarMultipart } from '@/lib/graphql/multipart-upload';
-import type { AuthUser } from '@/lib/graphql/types';
 
 import { UserAvatar } from '../user-avatar';
 
@@ -81,7 +82,7 @@ export function AvatarUpload({ accessToken, user }: AvatarUploadProps) {
 
     try {
       const nextUser = await uploadAvatarMultipart({
-        document: UPLOAD_AVATAR_MUTATION,
+        document: UploadAvatarDocument,
         file,
         accessToken,
       });

@@ -26,6 +26,7 @@ apps/web-client   — Next.js (браузерный клиент к GraphQL gate
 apps/telegram-mini-app — Vite + React Mini App (порт 4001, не Nest)
 libs/proto        — protobuf-контракты (`@libs/proto`)
 libs/common       — токены клиентов, события, маппинг RpcException (`@libs/common`)
+libs/graphql      — схема gateway, операции и codegen для web-client и Mini App (`@libs/graphql`)
 ```
 
 ## Как запустить
@@ -330,7 +331,7 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 - Каждый gRPC-вызов несёт `x-internal-token`.
 - После JWT gateway передаёт `user-id` в metadata, клиентский user id не доверяем.
 - Не коммитить и не читать секреты из `.env` / `config.json`.
-- Общий код из `apps/*` импортировать как `@libs/common` / `@libs/proto`, не через `../../../libs`. Новая lib: `nest generate library` + `package.json` с `"name": "@libs/<name>"` + `workspace:*`.
+- Общий код Nest импортировать как `@libs/common` / `@libs/proto`, не через `../../../libs`. Новая Nest-библиотека: `nest generate library`, в `package.json` — `"name": "@libs/<name>"`, `consumers` и `workspace:*` в корне. Клиентский контракт без Nest-модуля кладётся в `libs/` руками и в `nest-cli.json` не регистрируется (`@libs/graphql`). Импорт `@libs/<name>` разрешён только пакетам из `consumers`. После смены схемы gateway поднимите gateway и выполните `pnpm codegen`.
 
 ## Скрипты
 
@@ -354,6 +355,7 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 - `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` / `pnpm run build:ai-assistant:prod` — один сервис, без `.d.ts` и `.js.map`
 - `pnpm run build:web` — сборка Next.js
 - `pnpm run build:telegram-mini` — сборка Mini App
+- `pnpm codegen` — типы и документы `@libs/graphql` из `libs/graphql/schema.graphql`
 - `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда
 - `pnpm run lint:web` — ESLint `apps/web-client`
 - `pnpm run lint:telegram-mini` — ESLint `apps/telegram-mini-app`

@@ -1,0 +1,5 @@
+subscription TelegramLinked {
+  telegramLinked {
+    ok
+  }
+}

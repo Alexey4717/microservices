@@ -6,6 +6,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { PassportModule } from '@nestjs/passport';
 
 import { GraphQLUpload } from 'graphql-upload-ts';
+import { join } from 'node:path';
 
 import { validateGatewayEnv } from '@libs/common';
 
@@ -43,7 +44,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       useFactory: (configService: ConfigService): ApolloDriverConfig => {
         const isProd = configService.get('NODE_ENV') === 'production';
         return {
-          autoSchemaFile: true,
+          autoSchemaFile: isProd
+            ? true
+            : join(process.cwd(), 'libs/graphql/schema.graphql'),
           sortSchema: true,
           playground: !isProd,
           graphiql: !isProd,

@@ -1,0 +1,14 @@
+fragment UserFields on UserModel {
+  id
+  email
+  name
+  avatarUrl
+  accountTier
+  telegram {
+    userId
+    username
+    firstName
+    userLastName
+    photoUrl
+  }
+}
