@@ -1,0 +1,11 @@
+{
+  "name": "@apps/gateway",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -w exec nest start gateway --watch",
+    "build": "pnpm -w exec nest build gateway && pnpm -w run copy:proto",
+    "build:prod": "pnpm -w exec node scripts/clean-dist.mjs gateway && pnpm -w exec nest build gateway -p apps/gateway/tsconfig.app.prod.json && pnpm -w run copy:proto",
+    "start:prod": "pnpm -w exec node dist/apps/gateway/src/main.js"
+  }
+}

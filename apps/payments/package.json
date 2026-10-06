@@ -1,0 +1,11 @@
+{
+  "name": "@apps/payments",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -w exec nest start payments --watch",
+    "build": "pnpm -w exec nest build payments && pnpm -w run copy:proto",
+    "build:prod": "pnpm -w exec node scripts/clean-dist.mjs payments && pnpm -w exec nest build payments -p apps/payments/tsconfig.app.prod.json && pnpm -w run copy:proto",
+    "start:prod": "pnpm -w exec node dist/apps/payments/src/main.js"
+  }
+}

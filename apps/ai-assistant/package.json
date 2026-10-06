@@ -1,0 +1,11 @@
+{
+  "name": "@apps/ai-assistant",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -w exec nest start ai-assistant --watch",
+    "build": "pnpm -w exec nest build ai-assistant && pnpm -w run copy:proto",
+    "build:prod": "pnpm -w exec node scripts/clean-dist.mjs ai-assistant && pnpm -w exec nest build ai-assistant -p apps/ai-assistant/tsconfig.app.prod.json && pnpm -w run copy:proto",
+    "start:prod": "pnpm -w exec node dist/apps/ai-assistant/src/main.js"
+  }
+}

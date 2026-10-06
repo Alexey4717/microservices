@@ -12,10 +12,10 @@ import {
   toAccountTier,
 } from '@/lib/graphql/types';
 
-import { TelegramLinkButton } from './telegram-link-button';
 import { AvatarUpload } from './avatar-upload';
-import { PremiumCheckout } from './premium-checkout';
 import { PaymentsList } from './payments-list';
+import { PremiumCheckout } from './premium-checkout';
+import { TelegramLinkButton } from './telegram-link-button';
 
 export default async function ProfilePage() {
   const session = await getSession();

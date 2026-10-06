@@ -1,0 +1,11 @@
+{
+  "name": "@apps/files",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -w exec nest start files --watch",
+    "build": "pnpm -w exec nest build files && pnpm -w run copy:proto",
+    "build:prod": "pnpm -w exec node scripts/clean-dist.mjs files && pnpm -w exec nest build files -p apps/files/tsconfig.app.prod.json && pnpm -w run copy:proto",
+    "start:prod": "pnpm -w exec node dist/apps/files/src/main.js"
+  }
+}

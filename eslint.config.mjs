@@ -22,16 +22,7 @@ export default tseslint.config(
   ...tseslint.configs.recommendedTypeChecked,
   eslintConfigPrettier,
   {
-    files: [
-      'apps/gateway/**/*.ts',
-      'apps/users/**/*.ts',
-      'apps/mailer/**/*.ts',
-      'apps/files/**/*.ts',
-      'apps/payments/**/*.ts',
-      'apps/telegram/**/*.ts',
-      'apps/ai-assistant/**/*.ts',
-      'libs/**/*.ts',
-    ],
+    files: ['apps/**/*.ts', 'libs/**/*.ts'],
     languageOptions: {
       globals: {
         ...globals.node,

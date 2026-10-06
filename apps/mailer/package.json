@@ -1,0 +1,11 @@
+{
+  "name": "@apps/mailer",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -w exec nest start mailer --watch",
+    "build": "pnpm -w exec nest build mailer",
+    "build:prod": "pnpm -w exec node scripts/clean-dist.mjs mailer && pnpm -w exec nest build mailer -p apps/mailer/tsconfig.app.prod.json",
+    "start:prod": "pnpm -w exec node dist/apps/mailer/src/main.js"
+  }
+}

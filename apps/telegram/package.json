@@ -1,0 +1,11 @@
+{
+  "name": "@apps/telegram",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -w exec nest start telegram --watch",
+    "build": "pnpm -w exec nest build telegram && pnpm -w run copy:proto",
+    "build:prod": "pnpm -w exec node scripts/clean-dist.mjs telegram && pnpm -w exec nest build telegram -p apps/telegram/tsconfig.app.prod.json && pnpm -w run copy:proto",
+    "start:prod": "pnpm -w exec node dist/apps/telegram/src/main.js"
+  }
+}

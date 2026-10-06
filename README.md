@@ -66,9 +66,11 @@ pnpm run prisma:migrate:ai-assistant
 pnpm run start:all
 ```
 
-`start:all` и `start:all:dev` поднимают `users`, `mailer`, `files`, `payments`, `telegram`, `ai-assistant` и `gateway` параллельно через [concurrently](https://github.com/open-cli-tools/concurrently) (`pnpm run start:users` / `start:mailer` / `start:files` / `start:payments` / `start:telegram` / `start:ai-assistant` / `start:gateway`). Префиксы логов: `users`, `mailer`, `files`, `payments`, `telegram`, `ai-assistant`, `gateway`. Падение одного процесса остальные не гасит. Ctrl+C останавливает всех детей. Для собранного режима: `pnpm run start:all:prod` (сначала `build:*:prod` без `.d.ts`/`.js.map`, затем процессы из `dist/`). Docker Compose — Postgres, RabbitMQ и MinIO, не Node-процессы.
+`start:all` и `start:all:dev` поднимают `users`, `mailer`, `files`, `payments`, `telegram`, `ai-assistant` и `gateway` параллельно через [concurrently](https://github.com/open-cli-tools/concurrently) (`pnpm run start:users` / `start:mailer` / `start:files` / `start:payments` / `start:telegram` / `start:ai-assistant` / `start:gateway`). Префиксы логов: `users`, `mailer`, `files`, `payments`, `telegram`, `ai-assistant`, `gateway`. Падение одного процесса остальные не гасит. Ctrl+C останавливает всех детей. Для собранного режима: `pnpm run start:all:prod` (сначала последовательный `build:services:prod` без `.d.ts`/`.js.map` и без кэша Turbo, затем процессы из `dist/`). Docker Compose — Postgres, RabbitMQ и MinIO, не Node-процессы. Watch-стек через Turbo не запускается.
 
-Новый сервис: `pnpm exec nest generate app <name>`, скрипт `start:<name>` (и при необходимости `start:<name>:prod` / `build:<name>:prod`) и ещё одна команда в `concurrently` в `start:all` / `start:all:prod`.
+Новый Nest-сервис: `pnpm exec nest generate app <name>`, такой же `apps/<name>/package.json` (имя `@apps/<name>`, скрипты `dev` / `build` / `build:prod` / `start:prod` через `pnpm -w`, без своих dependencies), корневые алиасы `start:<name>` / `build:<name>` / `build:<name>:prod` / `start:<name>:prod` и строка в `concurrently` в `start:all` / `start:all:prod`. Новый веб или Expo: каталог в `apps/` со скриптами `dev`, `build` и `lint`, игнор в корневом ESLint и исключение каталога из inputs задачи `build:services` в `turbo.json`.
+
+Проверка бэкенда: `pnpm run build:services` (все Nest-сервисы по очереди) или прежние `pnpm run build:gateway` и аналоги. `pnpm run build` дополнительно собирает `web-client` и Telegram Mini App через Turbo; правка одного фронта другой фронт и бэкенд не пересобирает.
 
 Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 50051 / 50052 / 50053 / 50054 заняты) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
 
@@ -333,7 +335,7 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 ## Скрипты
 
 - `pnpm run start:all` / `pnpm run start:all:dev` — бэкенд-стек в watch (concurrently): users, mailer, files, payments, telegram, ai-assistant, gateway
-- `pnpm run start:all:prod` — prod-сборка без `.d.ts`/`.js.map`, затем весь стек из `dist/`
+- `pnpm run start:all:prod` — `build:services:prod` (без `.d.ts`/`.js.map`, без кэша Turbo), затем весь стек из `dist/`
 - `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` / `pnpm run start:telegram` / `pnpm run start:ai-assistant` — по отдельности (watch)
 - `pnpm run start:web` — Next.js на порту 4000 (`apps/web-client`)
 - `pnpm run start:telegram-mini` — Vite Mini App на порту 4001 (`apps/telegram-mini-app`), в `start:all` не входит
@@ -345,8 +347,11 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 - `pnpm run prisma:migrate:files` — миграции БД `files`
 - `pnpm run prisma:migrate:payments` — миграции БД `payments`
 - `pnpm run prisma:migrate:ai-assistant` — миграции БД `ai_assistant`
-- `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` / `pnpm run build:telegram` / `pnpm run build:ai-assistant` — с sourceMap
-- `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` / `pnpm run build:ai-assistant:prod` — без `.d.ts` и `.js.map`
+- `pnpm run build` — Turbo: последовательный Nest (`build:services`, кэш каталога `dist/**`) и отдельные сборки `web-client` / `telegram-mini-app`
+- `pnpm run build:services` — все Nest-сервисы строго по очереди, с sourceMap
+- `pnpm run build:services:prod` — то же для prod-сборки, без кэша Turbo
+- `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` / `pnpm run build:telegram` / `pnpm run build:ai-assistant` — один сервис, с sourceMap
+- `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` / `pnpm run build:ai-assistant:prod` — один сервис, без `.d.ts` и `.js.map`
 - `pnpm run build:web` — сборка Next.js
 - `pnpm run build:telegram-mini` — сборка Mini App
 - `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда

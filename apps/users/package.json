@@ -1,0 +1,11 @@
+{
+  "name": "@apps/users",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -w exec nest start users --watch",
+    "build": "pnpm -w exec nest build users && pnpm -w run copy:proto",
+    "build:prod": "pnpm -w exec node scripts/clean-dist.mjs users && pnpm -w exec nest build users -p apps/users/tsconfig.app.prod.json && pnpm -w run copy:proto",
+    "start:prod": "pnpm -w exec node dist/apps/users/src/main.js"
+  }
+}

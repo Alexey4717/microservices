@@ -2,12 +2,13 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { PaymentOrder } from './payment-order';
 import { query } from '@/lib/apollo/server';
 import { isPrefetchRequest } from '@/lib/auth/request-kind';
 import { getSession } from '@/lib/auth/session';
 import { GET_PAYMENT_QUERY } from '@/lib/graphql/documents';
 import type { PaymentModel } from '@/lib/graphql/types';
+
+import { PaymentOrder } from './payment-order';
 
 type PaymentPageProps = {
   params: Promise<{ id: string }>;
@@ -33,9 +34,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
     return <PaymentNotFound />;
   }
 
-  return (
-    <PaymentOrder payment={payment} accessToken={session.accessToken} />
-  );
+  return <PaymentOrder payment={payment} accessToken={session.accessToken} />;
 }
 
 function PaymentNotFound() {

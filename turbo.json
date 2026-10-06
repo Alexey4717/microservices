@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/turbo/schema.json",
+  "tasks": {
+    "build": {
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "//#build:services": {
+      "cache": true,
+      "outputs": ["dist/**"],
+      "inputs": [
+        "apps/**",
+        "!apps/web-client/**",
+        "!apps/telegram-mini-app/**",
+        "libs/**",
+        "scripts/copy-proto.mjs",
+        "scripts/clean-dist.mjs",
+        "nest-cli.json",
+        "tsconfig.json",
+        "tsconfig.build.json"
+      ]
+    }
+  }
+}

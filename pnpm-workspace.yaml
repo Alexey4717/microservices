@@ -1,7 +1,6 @@
 packages:
   - 'libs/*'
-  - 'apps/web-client'
-  - 'apps/telegram-mini-app'
+  - 'apps/*'
 
 allowBuilds:
   '@apollo/protobufjs': true
