@@ -6,10 +6,13 @@ import { useCallback, useId, useRef, useSyncExternalStore } from 'react';
 
 import { GetPaymentDocument } from '@libs/graphql/operations/payments/get-payment.generated';
 
-import type {
-  PaymentModel,
-  PaymentProvider,
-  PaymentStatus,
+import {
+  type PaymentModel,
+  type PaymentStatus,
+  formatAmountMinor,
+  formatPaymentDate,
+  paymentOrderStatusLabel,
+  paymentProviderLabel,
 } from '@/lib/graphql/payment-model';
 
 type PaymentOrderProps = {
@@ -19,18 +22,6 @@ type PaymentOrderProps = {
 const FAST_POLL_MS = 2_000;
 const SLOW_POLL_MS = 5_000;
 const SLOW_AFTER_MS = 30_000;
-
-const STATUS_LABEL: Record<PaymentStatus, string> = {
-  PENDING: 'Ожидаем подтверждение оплаты…',
-  SUCCEEDED: 'Оплата прошла',
-  FAILED: 'Оплата не прошла',
-  CANCELED: 'Оплата отменена',
-};
-
-const PROVIDER_LABEL: Record<PaymentProvider, string> = {
-  STRIPE: 'Stripe',
-  PAYPAL: 'PayPal',
-};
 
 export function PaymentOrder({ payment: initialPayment }: PaymentOrderProps) {
   const statusId = useId();
@@ -64,7 +55,7 @@ export function PaymentOrder({ payment: initialPayment }: PaymentOrderProps) {
           <div>
             <dt className="text-zinc-500">Провайдер</dt>
             <dd className="min-w-0 font-medium">
-              {PROVIDER_LABEL[payment.provider] ?? payment.provider}
+              {paymentProviderLabel[payment.provider] ?? payment.provider}
             </dd>
           </div>
           <div>
@@ -88,7 +79,7 @@ export function PaymentOrder({ payment: initialPayment }: PaymentOrderProps) {
           role="status"
           aria-live="polite"
         >
-          {STATUS_LABEL[payment.status] ?? payment.status}
+          {paymentOrderStatusLabel[payment.status] ?? payment.status}
         </p>
         {payment.status === 'PENDING' && payment.checkoutUrl ? (
           <a
@@ -158,20 +149,4 @@ function useSlowPoll(enabled: boolean): boolean {
     () => enabled && clockRef.current.slow,
     () => false,
   );
-}
-
-function formatAmountMinor(amountMinor: number, currency: string): string {
-  const major = amountMinor / 100;
-  return `${major.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}\u00a0${currency}`;
-}
-
-function formatPaymentDate(value: string): string {
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return value;
-  }
-  return new Date(parsed).toLocaleString('ru-RU');
 }

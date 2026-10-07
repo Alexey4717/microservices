@@ -10,14 +10,13 @@ import { createHash, randomBytes } from 'node:crypto';
 import {
   USERS_RMQ_CLIENT,
   USER_EVENTS,
-  USER_ID_METADATA_KEY,
   type UserAuthenticatedEvent,
   type UserCreatedEvent,
   type UserTelegramUpdatedEvent,
   type UserUpdatedEvent,
   emptyToNull,
   emptyToUndefined,
-  getMetadataValue,
+  requireUserId,
 } from '@libs/common';
 import type {
   AuthResponse,
@@ -252,13 +251,7 @@ export class AuthService {
   }
 
   async getMe(_data: GetMeRequest, metadata: Metadata): Promise<UserResponse> {
-    const userId = getMetadataValue(metadata, USER_ID_METADATA_KEY);
-    if (!userId) {
-      throw new RpcException({
-        code: status.UNAUTHENTICATED,
-        message: 'Missing user-id metadata',
-      });
-    }
+    const userId = requireUserId(metadata);
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -278,13 +271,7 @@ export class AuthService {
     data: UpdateMeRequest,
     metadata: Metadata,
   ): Promise<UserResponse> {
-    const userId = getMetadataValue(metadata, USER_ID_METADATA_KEY);
-    if (!userId) {
-      throw new RpcException({
-        code: status.UNAUTHENTICATED,
-        message: 'Missing user-id metadata',
-      });
-    }
+    const userId = requireUserId(metadata);
 
     const hasName = hasOptionalField(data, 'name');
     const hasAvatarUrl = hasOptionalField(data, 'avatarUrl');
@@ -350,13 +337,7 @@ export class AuthService {
     _data: CreateTelegramLinkTokenRequest,
     metadata: Metadata,
   ): Promise<CreateTelegramLinkTokenResponse> {
-    const userId = getMetadataValue(metadata, USER_ID_METADATA_KEY);
-    if (!userId) {
-      throw new RpcException({
-        code: status.UNAUTHENTICATED,
-        message: 'Missing user-id metadata',
-      });
-    }
+    const userId = requireUserId(metadata);
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {

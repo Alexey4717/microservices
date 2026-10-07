@@ -4,6 +4,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
 import {
+  InternalTokenInterceptor,
   PAYMENTS_RMQ_CLIENT,
   paymentsEventsPublisherOptions,
   validatePaymentsEnv,
@@ -12,7 +13,6 @@ import {
 import { HealthController } from './controllers/health.controller';
 import { PaymentsController } from './controllers/payments.controller';
 import { WebhooksController } from './controllers/webhooks.controller';
-import { InternalTokenInterceptor } from './interceptors/internal-token.interceptor';
 import { PaymentsService } from './services/payments.service';
 import { PrismaService } from './services/prisma.service';
 import { PaypalClient } from './services/providers/paypal-client';

@@ -4,7 +4,7 @@ import { RpcException } from '@nestjs/microservices';
 
 import { Metadata, status } from '@grpc/grpc-js';
 
-import { USER_ID_METADATA_KEY, getMetadataValue } from '@libs/common';
+import { requireUserId } from '@libs/common';
 import type {
   CheckoutResponse,
   CreateCheckoutRequest,
@@ -182,17 +182,6 @@ export class PaymentsService {
     });
     return { payments: payments.map(toPaymentResponse) };
   }
-}
-
-function requireUserId(metadata: Metadata): string {
-  const userId = getMetadataValue(metadata, USER_ID_METADATA_KEY);
-  if (!userId) {
-    throw new RpcException({
-      code: status.UNAUTHENTICATED,
-      message: 'Missing user-id metadata',
-    });
-  }
-  return userId;
 }
 
 function normalizeProductCode(productCode: string | undefined): string {

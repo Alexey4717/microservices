@@ -17,8 +17,8 @@ import { toAccountTier } from '@/lib/auth/auth-user';
 import type { GraphQLResponse } from '@/lib/graphql/response';
 
 import { REFRESH_COOKIE_NAME } from './constants';
+import { firstGraphQLErrorMessage, isUnauthenticated } from './gateway-errors';
 import { postGatewayGraphQL, refreshCookieHeader } from './gateway-request';
-import { firstGraphQLErrorMessage, isUnauthenticated } from './rotate-session';
 import { applySetCookiesFromResponse } from './set-cookie';
 
 export async function loginWithPassword(

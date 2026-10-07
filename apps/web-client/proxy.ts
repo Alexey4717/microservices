@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import { applySetCookiesToNextResponse } from '@/lib/auth/apply-parsed-cookie';
 import {
   ACCESS_TOKEN_HEADER,
   REFRESH_COOKIE_NAME,
   SESSION_USER_HEADER,
 } from '@/lib/auth/constants';
-import { applySetCookiesToNextResponse } from '@/lib/auth/parse-set-cookie';
 import {
   isPrefetchRequest,
   isServerActionRequest,

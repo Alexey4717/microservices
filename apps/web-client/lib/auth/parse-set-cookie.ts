@@ -1,5 +1,3 @@
-import { NextResponse } from 'next/server';
-
 type SameSite = 'lax' | 'strict' | 'none';
 
 export type ParsedSetCookie = {
@@ -86,35 +84,5 @@ function decodeCookieValue(value: string): string {
     return decodeURIComponent(value);
   } catch {
     return value;
-  }
-}
-
-export function applySetCookiesToNextResponse(
-  response: NextResponse,
-  setCookieHeaders: readonly string[],
-): void {
-  for (const header of setCookieHeaders) {
-    const parsed = parseSetCookieHeader(header);
-    if (!parsed) {
-      continue;
-    }
-
-    if (!parsed.value) {
-      response.cookies.delete({
-        name: parsed.name,
-        path: parsed.path ?? '/',
-      });
-      continue;
-    }
-
-    response.cookies.set({
-      name: parsed.name,
-      value: parsed.value,
-      httpOnly: parsed.httpOnly ?? true,
-      path: parsed.path ?? '/',
-      sameSite: parsed.sameSite ?? 'lax',
-      secure: parsed.secure ?? false,
-      maxAge: parsed.maxAge,
-    });
   }
 }

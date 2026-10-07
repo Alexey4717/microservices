@@ -1,22 +1,16 @@
 import Link from 'next/link';
 
-import type { PaymentModel, PaymentStatus } from '@/lib/graphql/payment-model';
+import {
+  type PaymentModel,
+  formatAmountMinor,
+  formatPaymentDate,
+  paymentListStatusLabel,
+  paymentProviderLabel,
+} from '@/lib/graphql/payment-model';
 
 type PaymentsListProps = {
   payments: PaymentModel[];
 };
-
-const STATUS_LABEL: Record<PaymentStatus, string> = {
-  PENDING: 'Ожидает оплаты',
-  SUCCEEDED: 'Оплачен',
-  FAILED: 'Ошибка',
-  CANCELED: 'Отменён',
-};
-
-const PROVIDER_LABEL = {
-  STRIPE: 'Stripe',
-  PAYPAL: 'PayPal',
-} as const;
 
 export function PaymentsList({ payments }: PaymentsListProps) {
   return (
@@ -38,14 +32,16 @@ export function PaymentsList({ payments }: PaymentsListProps) {
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-medium">
-                    {PROVIDER_LABEL[payment.provider] ?? payment.provider}
+                    {paymentProviderLabel[payment.provider] ?? payment.provider}
                   </span>
                   <span className="text-zinc-600 dark:text-zinc-400">
                     {formatAmountMinor(payment.amountMinor, payment.currency)}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-baseline justify-between gap-2 text-zinc-600 dark:text-zinc-400">
-                  <span>{STATUS_LABEL[payment.status] ?? payment.status}</span>
+                  <span>
+                    {paymentListStatusLabel[payment.status] ?? payment.status}
+                  </span>
                   <time dateTime={payment.createdAt}>
                     {formatPaymentDate(payment.createdAt)}
                   </time>
@@ -65,20 +61,4 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       )}
     </div>
   );
-}
-
-function formatAmountMinor(amountMinor: number, currency: string): string {
-  const major = amountMinor / 100;
-  return `${major.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}\u00a0${currency}`;
-}
-
-function formatPaymentDate(value: string): string {
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return value;
-  }
-  return new Date(parsed).toLocaleString('ru-RU');
 }

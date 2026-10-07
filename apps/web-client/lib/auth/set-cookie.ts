@@ -1,7 +1,31 @@
 import { cookies } from 'next/headers';
 
+import {
+  type ParsedCookieJar,
+  applyParsedSetCookie,
+} from './apply-parsed-cookie';
 import { REFRESH_COOKIE_NAME } from './constants';
 import { parseSetCookieHeader, readSetCookieHeaders } from './parse-set-cookie';
+
+export function buildRefreshSetCookieHeader(token: string): string {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  return `${REFRESH_COOKIE_NAME}=${encodeURIComponent(token)}; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax${secure}`;
+}
+
+export function setCookieHeadersFrom(
+  response: Response,
+  refreshToken: string | null,
+  keepSession: boolean,
+): string[] {
+  const fromResponse = readSetCookieHeaders(response);
+  if (fromResponse.length > 0) {
+    return fromResponse;
+  }
+  if (keepSession && refreshToken) {
+    return [buildRefreshSetCookieHeader(refreshToken)];
+  }
+  return [];
+}
 
 export async function applySetCookieHeaders(
   setCookieHeaders: readonly string[],
@@ -12,29 +36,21 @@ export async function applySetCookieHeaders(
 
   try {
     const cookieStore = await cookies();
+    const jar: ParsedCookieJar = {
+      set: (cookie) => {
+        cookieStore.set(cookie);
+      },
+      delete: (cookie) => {
+        cookieStore.delete(cookie);
+      },
+    };
+
     for (const header of setCookieHeaders) {
       const parsed = parseSetCookieHeader(header);
       if (!parsed) {
         continue;
       }
-
-      if (!parsed.value) {
-        cookieStore.delete({
-          name: parsed.name,
-          path: parsed.path ?? '/',
-        });
-        continue;
-      }
-
-      cookieStore.set({
-        name: parsed.name,
-        value: parsed.value,
-        httpOnly: parsed.httpOnly ?? true,
-        path: parsed.path ?? '/',
-        sameSite: parsed.sameSite ?? 'lax',
-        secure: parsed.secure ?? false,
-        maxAge: parsed.maxAge,
-      });
+      applyParsedSetCookie(parsed, jar);
     }
   } catch (error) {
     if (isReadonlyCookiesError(error)) {
@@ -59,7 +75,7 @@ export async function applySetCookiesFromResponse(
   }
 
   await applySetCookieHeaders([
-    `${REFRESH_COOKIE_NAME}=${fallbackRefreshToken}; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax`,
+    buildRefreshSetCookieHeader(fallbackRefreshToken),
   ]);
 }
 

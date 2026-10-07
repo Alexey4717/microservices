@@ -3,6 +3,7 @@ import { GrpcMethod } from '@nestjs/microservices';
 
 import { Metadata } from '@grpc/grpc-js';
 
+import { InternalTokenInterceptor } from '@libs/common';
 import { AUTH_SERVICE_NAME } from '@libs/proto';
 import type {
   AuthResponse,
@@ -23,7 +24,6 @@ import type {
   UserResponse,
 } from '@libs/proto';
 
-import { InternalTokenInterceptor } from '../interceptors/internal-token.interceptor';
 import { AuthService } from '../services/auth.service';
 
 @Controller()

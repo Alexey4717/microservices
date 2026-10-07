@@ -10,9 +10,9 @@ import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
 import { Observable } from 'rxjs';
 
-import { INTERNAL_TOKEN_METADATA_KEY, getMetadataValue } from '@libs/common';
-
+import { INTERNAL_TOKEN_METADATA_KEY } from './client-tokens';
 import { extractGrpcMetadata, isGrpcMetadataContext } from './grpc-context';
+import { getMetadataValue } from './metadata';
 
 @Injectable()
 export class InternalTokenInterceptor implements NestInterceptor {

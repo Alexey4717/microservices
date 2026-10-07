@@ -10,6 +10,7 @@ import {
 } from '@prisma/ai-assistant-client';
 import { Observable, type Subscriber } from 'rxjs';
 
+import { requireUserId } from '@libs/common';
 import type {
   ConversationDetailResponse,
   ConversationResponse,
@@ -24,7 +25,6 @@ import type {
 
 import { LlmService } from './llm.service';
 import { PrismaService } from './prisma.service';
-import { requireUserId } from './require-user-id';
 import { RetrievalPort, formatRetrieval } from './retrieval.port';
 import { SYSTEM_PROMPT } from './system-prompt';
 import {

@@ -2,11 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
-import { validateFilesEnv } from '@libs/common';
+import { InternalTokenInterceptor, validateFilesEnv } from '@libs/common';
 
 import { FilesController } from './controllers/files.controller';
 import { HealthController } from './controllers/health.controller';
-import { InternalTokenInterceptor } from './interceptors/internal-token.interceptor';
 import { FilesService } from './services/files.service';
 import { PrismaService } from './services/prisma.service';
 import { StorageService } from './services/storage.service';

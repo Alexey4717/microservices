@@ -6,8 +6,8 @@ import {
   REFRESH_COOKIE_NAME,
   SESSION_USER_HEADER,
 } from './constants';
+import { isGatewayUnavailableError } from './gateway-errors';
 import { isPrefetchRequest, isServerActionRequest } from './request-kind';
-import { isGatewayUnavailableError } from './rotate-session';
 import { type Session, loadSession, peekSession } from './session-store';
 import { decodeSessionUser } from './session-user';
 import { applySetCookieHeaders } from './set-cookie';

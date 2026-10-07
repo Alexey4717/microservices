@@ -4,11 +4,7 @@ import { RpcException } from '@nestjs/microservices';
 import { Metadata, status } from '@grpc/grpc-js';
 import { randomUUID } from 'node:crypto';
 
-import {
-  USER_ID_METADATA_KEY,
-  avatarExtension,
-  getMetadataValue,
-} from '@libs/common';
+import { avatarExtension, requireUserId } from '@libs/common';
 import type { UploadFileRequest, UploadFileResponse } from '@libs/proto';
 
 import { assertAvatarUpload, toContentBuffer } from './file-validation';
@@ -28,13 +24,7 @@ export class FilesService {
     data: UploadFileRequest,
     metadata: Metadata,
   ): Promise<UploadFileResponse> {
-    const ownerUserId = getMetadataValue(metadata, USER_ID_METADATA_KEY);
-    if (!ownerUserId) {
-      throw new RpcException({
-        code: status.UNAUTHENTICATED,
-        message: 'Missing user-id metadata',
-      });
-    }
+    const ownerUserId = requireUserId(metadata);
 
     const content = toContentBuffer(data.content);
     const mimeType = data.mimeType?.trim() ?? '';

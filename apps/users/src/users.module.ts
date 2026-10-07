@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
 import {
+  InternalTokenInterceptor,
   USERS_RMQ_CLIENT,
   usersEventsPublisherOptions,
   validateUsersEnv,
@@ -11,7 +12,6 @@ import {
 
 import { AuthController } from './controllers/auth.controller';
 import { PaymentsEventsController } from './controllers/payments-events.controller';
-import { InternalTokenInterceptor } from './interceptors/internal-token.interceptor';
 import { AuthService } from './services/auth.service';
 import { PaymentsEventsService } from './services/payments-events.service';
 import { PrismaService } from './services/prisma.service';
