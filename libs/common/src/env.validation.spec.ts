@@ -78,6 +78,9 @@ describe('validateAiAssistantEnv', () => {
     expect(result.LLM_CONTEXT_TOKENS).toBe(8192);
     expect(result.LLM_MAX_OUTPUT_TOKENS).toBe(1024);
     expect(result.AI_ASSISTANT_DAILY_TOKEN_LIMIT).toBe(0);
+    expect(result.LLM_TEMPERATURE).toBe(0.2);
+    expect(result.LLM_EMBED_MODEL).toBe('nomic-embed-text');
+    expect(result.LLM_EMBED_DIMENSIONS).toBe(768);
   });
 
   it('отклоняет конфиг без модели', () => {

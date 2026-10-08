@@ -1,8 +1,10 @@
 import { plainToInstance } from 'class-transformer';
 import {
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
   validateSync,
 } from 'class-validator';
@@ -482,6 +484,21 @@ export class AiAssistantEnvironmentVariables {
   @Min(1)
   LLM_MAX_OUTPUT_TOKENS!: number;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  LLM_TEMPERATURE?: number;
+
+  @IsOptional()
+  @IsString()
+  LLM_EMBED_MODEL?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  LLM_EMBED_DIMENSIONS?: number;
+
   @IsInt()
   @Min(0)
   AI_ASSISTANT_DAILY_TOKEN_LIMIT!: number;
@@ -513,6 +530,19 @@ export function validateAiAssistantEnv(
         .map((error) => Object.values(error.constraints ?? {}).join(', '))
         .join('; ')}`,
     );
+  }
+
+  if (
+    validated.LLM_TEMPERATURE === undefined ||
+    validated.LLM_TEMPERATURE === null
+  ) {
+    validated.LLM_TEMPERATURE = 0.2;
+  }
+  if (!validated.LLM_EMBED_MODEL) {
+    validated.LLM_EMBED_MODEL = 'nomic-embed-text';
+  }
+  if (!validated.LLM_EMBED_DIMENSIONS) {
+    validated.LLM_EMBED_DIMENSIONS = 768;
   }
 
   return validated as unknown as Record<string, unknown>;

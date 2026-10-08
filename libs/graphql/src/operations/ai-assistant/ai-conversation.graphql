@@ -11,5 +11,11 @@ query AiConversation($id: ID!) {
       toolName
       createdAt
     }
+    actions {
+      id
+      type
+      title
+      status
+    }
   }
 }

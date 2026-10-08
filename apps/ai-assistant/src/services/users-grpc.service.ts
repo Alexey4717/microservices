@@ -6,10 +6,11 @@ import { type Observable, lastValueFrom } from 'rxjs';
 
 import { USERS_GRPC_CLIENT, createInternalMetadata } from '@libs/common';
 import { AUTH_SERVICE_NAME } from '@libs/proto';
-import type { GetMeRequest, UserResponse } from '@libs/proto';
+import type { GetMeRequest, UpdateMeRequest, UserResponse } from '@libs/proto';
 
 interface AuthGrpcClient {
   getMe(data: GetMeRequest, metadata: Metadata): Observable<UserResponse>;
+  updateMe(data: UpdateMeRequest, metadata: Metadata): Observable<UserResponse>;
 }
 
 @Injectable()
@@ -25,6 +26,19 @@ export class UsersGrpcService implements OnModuleInit {
   getMe(userId: string, internalToken: string): Promise<UserResponse> {
     return lastValueFrom(
       this.auth.getMe({}, createInternalMetadata(internalToken, userId)),
+    );
+  }
+
+  updateMe(
+    userId: string,
+    internalToken: string,
+    name: string,
+  ): Promise<UserResponse> {
+    return lastValueFrom(
+      this.auth.updateMe(
+        { name },
+        createInternalMetadata(internalToken, userId),
+      ),
     );
   }
 }

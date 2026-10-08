@@ -14,12 +14,16 @@ enum MessageRole {
 }
 
 model Conversation {
-  id        String    @id @default(uuid())
-  userId    String
-  title     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
+  id                     String          @id @default(uuid())
+  userId                 String
+  title                  String?
+  summary                String?         @db.Text
+  summaryCoversMessageId String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  messages               Message[]
+  pendingActions         PendingAction[]
+  turnTraces             TurnTrace[]
 
   @@index([userId, updatedAt])
 }
@@ -46,4 +50,53 @@ model TokenUsage {
   completionTokens Int      @default(0)
 
   @@unique([userId, day])
+}
+
+enum PendingActionType {
+  checkout
+  navigate
+  update_name
+}
+
+enum PendingActionStatus {
+  pending
+  confirmed
+  rejected
+}
+
+model PendingAction {
+  id             String              @id @default(uuid())
+  conversationId String
+  conversation   Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  type           PendingActionType
+  payload        Json
+  status         PendingActionStatus @default(pending)
+  createdAt      DateTime            @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([userId, status])
+}
+
+model TurnTrace {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messageId      String
+  toolNames      Json
+  chunkIds       Json
+  pagePath       String?
+  temperature    Float
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model KnowledgeChunk {
+  id        String                     @id @default(uuid())
+  source    String
+  content   String                     @db.Text
+  embedding Unsupported("vector")?
+
+  @@index([source])
 }

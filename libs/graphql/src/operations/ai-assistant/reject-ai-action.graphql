@@ -1,0 +1,9 @@
+mutation RejectAiAction($actionId: ID!) {
+  rejectAiAction(actionId: $actionId) {
+    actionId
+    type
+    status
+    checkoutUrl
+    path
+  }
+}

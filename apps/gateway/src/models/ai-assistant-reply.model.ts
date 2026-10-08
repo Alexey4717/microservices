@@ -1,5 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 
+import { AiActionCardModel } from './ai-action.model';
+
 @ObjectType()
 export class AiAssistantReplyModel {
   @Field(() => ID)
@@ -13,4 +15,10 @@ export class AiAssistantReplyModel {
 
   @Field()
   done!: boolean;
+
+  @Field(() => String, { nullable: true })
+  toolName?: string | null;
+
+  @Field(() => AiActionCardModel, { nullable: true })
+  action?: AiActionCardModel | null;
 }

@@ -23,6 +23,13 @@ export type AiConversationQuery = {
       toolName: string | null;
       createdAt: string;
     }>;
+    actions: Array<{
+      __typename?: 'AiPendingActionModel';
+      id: string;
+      type: string;
+      title: string;
+      status: string;
+    }>;
   };
 };
 
@@ -39,6 +46,12 @@ export const AiConversationDocument = gql`
         content
         toolName
         createdAt
+      }
+      actions {
+        id
+        type
+        title
+        status
       }
     }
   }

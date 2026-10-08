@@ -7,14 +7,31 @@ enum AccountTier {
   PREMIUM
 }
 
+type AiActionCardModel {
+  id: ID!
+  title: String!
+  type: String!
+}
+
+type AiActionResultModel {
+  actionId: ID!
+  checkoutUrl: String
+  path: String
+  status: String!
+  type: String!
+}
+
 type AiAssistantReplyModel {
+  action: AiActionCardModel
   conversationId: ID!
   delta: String!
   done: Boolean!
   messageId: ID!
+  toolName: String
 }
 
 type AiConversationDetailModel {
+  actions: [AiPendingActionModel!]!
   createdAt: String!
   id: ID!
   messages: [AiMessageModel!]!
@@ -35,6 +52,13 @@ type AiMessageModel {
   id: ID!
   role: String!
   toolName: String
+}
+
+type AiPendingActionModel {
+  id: ID!
+  status: String!
+  title: String!
+  type: String!
 }
 
 type AuthPayload {
@@ -65,6 +89,7 @@ input LogoutInput {
 }
 
 type Mutation {
+  confirmAiAction(actionId: ID!): AiActionResultModel!
   createAiConversation: AiConversationModel!
   createCheckout(input: CreateCheckoutInput!): CheckoutPayload!
   createTelegramLink: TelegramLink!
@@ -73,6 +98,7 @@ type Mutation {
   logout(input: LogoutInput): Boolean!
   refresh(input: RefreshInput): AuthPayload!
   register(input: RegisterInput!): AuthPayload!
+  rejectAiAction(actionId: ID!): AiActionResultModel!
   updateMe(input: UpdateMeInput!): UserModel!
   uploadAvatar(file: Upload!): UserModel!
 }
@@ -119,7 +145,7 @@ input RegisterInput {
 }
 
 type Subscription {
-  aiAssistantReply(content: String!, conversationId: ID!): AiAssistantReplyModel!
+  aiAssistantReply(content: String!, conversationId: ID!, pagePath: String, temperature: Float): AiAssistantReplyModel!
   telegramLinked: TelegramLinkedPayload!
 }
 

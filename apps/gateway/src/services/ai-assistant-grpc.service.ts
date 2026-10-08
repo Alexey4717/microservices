@@ -11,12 +11,15 @@ import {
 } from '@libs/common';
 import { AI_ASSISTANT_SERVICE_NAME } from '@libs/proto';
 import type {
+  ActionResult,
+  ConfirmActionRequest,
   ConversationDetailResponse,
   ConversationResponse,
   CreateConversationRequest,
   GetConversationRequest,
   ListConversationsRequest,
   ListConversationsResponse,
+  RejectActionRequest,
   SendMessageEvent,
   SendMessageRequest,
 } from '@libs/proto';
@@ -38,6 +41,14 @@ interface AiAssistantGrpcClient {
     data: SendMessageRequest,
     metadata: Metadata,
   ): Observable<SendMessageEvent>;
+  confirmAction(
+    data: ConfirmActionRequest,
+    metadata: Metadata,
+  ): Observable<ActionResult>;
+  rejectAction(
+    data: RejectActionRequest,
+    metadata: Metadata,
+  ): Observable<ActionResult>;
 }
 
 @Injectable()
@@ -96,10 +107,43 @@ export class AiAssistantGrpcService implements OnModuleInit {
     content: string,
     internalToken: string,
     userId: string,
+    pagePath?: string | null,
+    temperature?: number | null,
   ): AsyncIterable<SendMessageEvent> {
     return grpcStreamToAsyncIterable(
       this.aiAssistant.sendMessage(
-        { conversationId, content },
+        {
+          conversationId,
+          content,
+          pagePath: pagePath ?? '',
+          temperature: temperatureToProto(temperature),
+        },
+        createInternalMetadata(internalToken, userId),
+      ),
+    );
+  }
+
+  confirmAction(
+    actionId: string,
+    internalToken: string,
+    userId: string,
+  ): Promise<ActionResult> {
+    return this.callGraphql(() =>
+      this.aiAssistant.confirmAction(
+        { actionId },
+        createInternalMetadata(internalToken, userId),
+      ),
+    );
+  }
+
+  rejectAction(
+    actionId: string,
+    internalToken: string,
+    userId: string,
+  ): Promise<ActionResult> {
+    return this.callGraphql(() =>
+      this.aiAssistant.rejectAction(
+        { actionId },
         createInternalMetadata(internalToken, userId),
       ),
     );
@@ -112,6 +156,13 @@ export class AiAssistantGrpcService implements OnModuleInit {
       throw mapRpcToGraphqlError(error);
     }
   }
+}
+
+function temperatureToProto(value: number | null | undefined): string {
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return '';
+  }
+  return String(value);
 }
 
 function grpcStreamToAsyncIterable<T>(source: Observable<T>): AsyncIterable<T> {

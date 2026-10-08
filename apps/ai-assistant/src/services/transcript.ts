@@ -11,6 +11,7 @@ export interface StoredToolCall {
 }
 
 export interface StoredMessage {
+  id?: string;
   role: string;
   content: string;
   toolName?: string | null;

@@ -4,7 +4,27 @@ import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 
 import { PaymentsTool } from './payments-tool';
 import { ProfileTool } from './profile-tool';
-import type { AssistantTool, ToolSession } from './tool-types';
+import {
+  ProposeCheckoutTool,
+  ProposeNavigationTool,
+  ProposeUpdateNameTool,
+} from './propose-tools';
+import type { AssistantTool, ToolEffect, ToolSession } from './tool-types';
+
+export function toOpenAiTools(
+  tools: ReadonlyArray<
+    Pick<AssistantTool, 'name' | 'description' | 'parameters'>
+  >,
+): ChatCompletionTool[] {
+  return tools.map((tool) => ({
+    type: 'function',
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    },
+  }));
+}
 
 @Injectable()
 export class ToolRegistry {
@@ -13,10 +33,19 @@ export class ToolRegistry {
   constructor(
     private readonly profile: ProfileTool,
     private readonly payments: PaymentsTool,
+    private readonly proposeCheckout: ProposeCheckoutTool,
+    private readonly proposeNavigation: ProposeNavigationTool,
+    private readonly proposeUpdateName: ProposeUpdateNameTool,
   ) {}
 
   tools(): AssistantTool[] {
-    return [this.profile, this.payments];
+    return [
+      this.profile,
+      this.payments,
+      this.proposeCheckout,
+      this.proposeNavigation,
+      this.proposeUpdateName,
+    ];
   }
 
   schemaText(): string {
@@ -32,35 +61,32 @@ export class ToolRegistry {
   }
 
   openAiTools(): ChatCompletionTool[] {
-    return this.tools().map((tool) => ({
-      type: 'function',
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-      },
-    }));
+    return toOpenAiTools(this.tools());
   }
 
   async execute(
     name: string,
     args: unknown,
     session: ToolSession,
-  ): Promise<string> {
+  ): Promise<ToolEffect> {
     const tool = this.tools().find((item) => item.name === name);
     if (!tool) {
-      return `Неизвестный инструмент: ${name}`;
+      return { content: `Неизвестный инструмент: ${name}` };
     }
 
     try {
-      return await tool.execute(args, session);
+      const result = await tool.execute(args, session);
+      if (typeof result === 'string') {
+        return { content: result };
+      }
+      return result;
     } catch (error) {
       this.logger.warn(
         `Инструмент ${name} не выполнился: ${
           error instanceof Error ? error.message : 'unknown'
         }`,
       );
-      return 'Инструмент временно недоступен';
+      return { content: 'Инструмент временно недоступен' };
     }
   }
 }

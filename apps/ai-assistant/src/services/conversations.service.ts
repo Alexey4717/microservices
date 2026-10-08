@@ -7,6 +7,8 @@ import {
   type Conversation,
   type Message,
   MessageRole,
+  type PendingAction,
+  PendingActionStatus,
 } from '@prisma/ai-assistant-client';
 import { Observable, type Subscriber } from 'rxjs';
 
@@ -19,15 +21,26 @@ import type {
   ListConversationsRequest,
   ListConversationsResponse,
   MessageResponse,
+  PendingActionView,
   SendMessageEvent,
   SendMessageRequest,
 } from '@libs/proto';
 
+import {
+  SUMMARY_INPUT_TOKENS,
+  SUMMARY_INSTRUCTION,
+  formatSummaryRequest,
+  selectUncoveredMessages,
+  takeSummaryPrefix,
+} from './conversation-summary';
 import { LlmService } from './llm.service';
 import { PrismaService } from './prisma.service';
+import { normalizeAppPagePath, readActionTitle } from './propose-actions';
 import { RetrievalPort, formatRetrieval } from './retrieval.port';
-import { SYSTEM_PROMPT } from './system-prompt';
+import { buildSystemPrompt } from './system-prompt';
+import { parseTemperatureInput, resolveTemperature } from './temperature';
 import {
+  type FitHistoryResult,
   TokenBudgetService,
   isOverDailyTokenLimit,
   utcDay,
@@ -45,7 +58,10 @@ import {
 
 const MAX_TOOL_ROUNDS = 4;
 
-type ConversationWithMessages = Conversation & { messages: Message[] };
+type ConversationWithMessages = Conversation & {
+  messages: Message[];
+  pendingActions: PendingAction[];
+};
 
 @Injectable()
 export class ConversationsService {
@@ -132,29 +148,34 @@ export class ConversationsService {
       throw rpcError(status.INVALID_ARGUMENT, 'Пустое сообщение');
     }
 
-    const session = this.toolSession(userId);
+    const pagePath = normalizeAppPagePath(data.pagePath);
+    const temperature = resolveTemperature(
+      parseTemperatureInput(data.temperature),
+      this.readTemperature(),
+    );
+    const session = this.toolSession(userId, conversation.id);
     const fragments = await this.retrieval.retrieve({
       userId,
       query: content,
     });
     const retrievalText = formatRetrieval(fragments);
+    const chunkIds = fragments.flatMap((fragment) =>
+      fragment.id ? [fragment.id] : [],
+    );
     const draftRows: StoredMessage[] = [
       ...conversation.messages.map(toStoredMessage),
       { role: 'user', content },
     ];
-    const fitted = this.budget.fit({
-      systemPrompt: SYSTEM_PROMPT,
-      toolSchemaText: this.tools.schemaText(),
+    const prepared = await this.prepareHistory({
+      conversation,
+      draftRows,
       retrievalText,
-      history: toBudgetMessages(draftRows),
-      contextTokens: this.readInt('LLM_CONTEXT_TOKENS'),
-      maxOutputTokens: this.readInt('LLM_MAX_OUTPUT_TOKENS'),
+      pagePath,
+      userId,
+      signal,
     });
-    if (fitted.overflow) {
-      throw rpcError(
-        status.FAILED_PRECONDITION,
-        'Сообщение не помещается в контекст модели',
-      );
+    if (signal.aborted) {
+      return;
     }
 
     await this.assertDailyLimit(userId);
@@ -178,15 +199,14 @@ export class ConversationsService {
       });
     }
 
+    const { fitted, systemPrompt } = prepared;
     const keptCount = draftRows.length - fitted.droppedCount;
     const keptRows = draftRows.slice(draftRows.length - keptCount);
     const llmMessages = [
-      ...fitted.messages
-        .filter((message) => message.role === 'system')
-        .map((message) => ({
-          role: 'system' as const,
-          content: message.content,
-        })),
+      { role: 'system' as const, content: systemPrompt },
+      ...(retrievalText
+        ? [{ role: 'system' as const, content: retrievalText }]
+        : []),
       ...toLlmMessages(keptRows),
     ];
     if (!keptRows.some((row) => row === draftRows[draftRows.length - 1])) {
@@ -195,6 +215,7 @@ export class ConversationsService {
 
     const assistantMessageId = crypto.randomUUID();
     const openAiTools = this.tools.openAiTools();
+    const toolNames: string[] = [];
     let toolRounds = 0;
 
     while (!signal.aborted) {
@@ -203,6 +224,7 @@ export class ConversationsService {
       const turn = await this.llm.createTurn({
         messages: llmMessages,
         tools: allowTools ? openAiTools : [],
+        temperature,
         signal,
         onTextDelta: (delta) => {
           this.emit(subscriber, {
@@ -210,6 +232,7 @@ export class ConversationsService {
             messageId: assistantMessageId,
             delta,
             done: false,
+            toolName: '',
           });
         },
       });
@@ -241,8 +264,9 @@ export class ConversationsService {
 
         for (const call of turn.toolCalls) {
           const args = parseToolArguments(call.arguments);
-          const result = await this.tools.execute(call.name, args, session);
-          const stored = encodeToolResult(call.id, result);
+          const outcome = await this.tools.execute(call.name, args, session);
+          toolNames.push(call.name);
+          const stored = encodeToolResult(call.id, outcome.content);
           await this.prisma.message.create({
             data: {
               conversationId: conversation.id,
@@ -254,7 +278,15 @@ export class ConversationsService {
           llmMessages.push({
             role: 'tool',
             tool_call_id: call.id,
-            content: result,
+            content: outcome.content,
+          });
+          this.emit(subscriber, {
+            conversationId: conversation.id,
+            messageId: assistantMessageId,
+            delta: '',
+            done: false,
+            toolName: call.name,
+            action: outcome.action,
           });
         }
 
@@ -269,6 +301,7 @@ export class ConversationsService {
           messageId: assistantMessageId,
           delta: answer,
           done: false,
+          toolName: '',
         });
       }
 
@@ -282,13 +315,161 @@ export class ConversationsService {
           completionTokens: turn.completionTokens,
         },
       });
+      await this.storeTrace({
+        conversationId: conversation.id,
+        messageId: assistantMessageId,
+        toolNames,
+        chunkIds,
+        pagePath,
+        temperature,
+      });
       this.emit(subscriber, {
         conversationId: conversation.id,
         messageId: assistantMessageId,
         delta: '',
         done: true,
+        toolName: '',
       });
       return;
+    }
+  }
+
+  private async prepareHistory(input: {
+    conversation: Conversation;
+    draftRows: StoredMessage[];
+    retrievalText: string;
+    pagePath: string | null;
+    userId: string;
+    signal: AbortSignal;
+  }): Promise<{ fitted: FitHistoryResult; systemPrompt: string }> {
+    let summary = input.conversation.summary;
+    let covers = input.conversation.summaryCoversMessageId;
+    let systemPrompt = buildSystemPrompt({
+      pagePath: input.pagePath,
+      summary,
+    });
+    let fitted = this.fitHistory(
+      systemPrompt,
+      input.retrievalText,
+      input.draftRows,
+    );
+    this.assertFits(fitted);
+
+    for (let pass = 0; pass < 2 && !input.signal.aborted; pass += 1) {
+      const uncovered = selectUncoveredMessages(
+        input.draftRows,
+        fitted.droppedCount,
+        covers,
+      );
+      const batch = takeSummaryPrefix(uncovered, SUMMARY_INPUT_TOKENS);
+      const lastId = batch[batch.length - 1]?.id;
+      if (!lastId) {
+        break;
+      }
+
+      await this.assertDailyLimit(input.userId);
+      let summarized: string | undefined;
+      try {
+        const turn = await this.llm.summarize({
+          instruction: SUMMARY_INSTRUCTION,
+          content: formatSummaryRequest(summary, batch),
+          signal: input.signal,
+        });
+        if (input.signal.aborted) {
+          break;
+        }
+        await this.addUsage(
+          input.userId,
+          turn.promptTokens,
+          turn.completionTokens,
+        );
+        summarized = turn.content.trim().slice(0, 4000);
+      } catch (error) {
+        if (input.signal.aborted || error instanceof RpcException) {
+          throw error;
+        }
+        this.logger.warn(
+          `Сводка истории пропущена: ${
+            error instanceof Error ? error.message : 'unknown'
+          }`,
+        );
+        break;
+      }
+      if (!summarized) {
+        break;
+      }
+
+      summary = summarized;
+      covers = lastId;
+      await this.prisma.conversation.update({
+        where: { id: input.conversation.id },
+        data: { summary, summaryCoversMessageId: covers },
+      });
+      systemPrompt = buildSystemPrompt({
+        pagePath: input.pagePath,
+        summary,
+      });
+      fitted = this.fitHistory(
+        systemPrompt,
+        input.retrievalText,
+        input.draftRows,
+      );
+      this.assertFits(fitted);
+    }
+
+    return { fitted, systemPrompt };
+  }
+
+  private fitHistory(
+    systemPrompt: string,
+    retrievalText: string,
+    draftRows: StoredMessage[],
+  ): FitHistoryResult {
+    return this.budget.fit({
+      systemPrompt,
+      toolSchemaText: this.tools.schemaText(),
+      retrievalText,
+      history: toBudgetMessages(draftRows),
+      contextTokens: this.readInt('LLM_CONTEXT_TOKENS'),
+      maxOutputTokens: this.readInt('LLM_MAX_OUTPUT_TOKENS'),
+    });
+  }
+
+  private assertFits(fitted: FitHistoryResult): void {
+    if (!fitted.overflow) {
+      return;
+    }
+    throw rpcError(
+      status.FAILED_PRECONDITION,
+      'Сообщение не помещается в контекст модели',
+    );
+  }
+
+  private async storeTrace(input: {
+    conversationId: string;
+    messageId: string;
+    toolNames: string[];
+    chunkIds: string[];
+    pagePath: string | null;
+    temperature: number;
+  }): Promise<void> {
+    try {
+      await this.prisma.turnTrace.create({
+        data: {
+          conversationId: input.conversationId,
+          messageId: input.messageId,
+          toolNames: input.toolNames,
+          chunkIds: input.chunkIds,
+          pagePath: input.pagePath,
+          temperature: input.temperature,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Траектория хода не сохранена: ${
+          error instanceof Error ? error.message : 'unknown'
+        }`,
+      );
     }
   }
 
@@ -312,7 +493,13 @@ export class ConversationsService {
 
     const conversation = await this.prisma.conversation.findFirst({
       where: { id: conversationId, userId },
-      include: { messages: { orderBy: { createdAt: 'asc' } } },
+      include: {
+        messages: { orderBy: { createdAt: 'asc' } },
+        pendingActions: {
+          where: { status: PendingActionStatus.pending },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
     if (!conversation) {
       throw rpcError(status.NOT_FOUND, 'Диалог не найден');
@@ -320,11 +507,17 @@ export class ConversationsService {
     return conversation;
   }
 
-  private toolSession(userId: string): ToolSession {
+  private toolSession(userId: string, conversationId: string): ToolSession {
     return {
       userId,
+      conversationId,
       internalToken: this.config.getOrThrow<string>('INTERNAL_SERVICE_TOKEN'),
     };
+  }
+
+  private readTemperature(): number {
+    const value = this.config.get<number | string>('LLM_TEMPERATURE');
+    return resolveTemperature(parseTemperatureInput(value), 0.2);
   }
 
   private async assertDailyLimit(userId: string): Promise<void> {
@@ -373,6 +566,7 @@ export class ConversationsService {
 
 function toStoredMessage(message: Message): StoredMessage {
   return {
+    id: message.id,
     role: message.role,
     content: message.content,
     toolName: message.toolName,
@@ -401,12 +595,22 @@ function toMessageResponse(message: Message): MessageResponse {
   };
 }
 
+function toPendingView(action: PendingAction): PendingActionView {
+  return {
+    id: action.id,
+    type: action.type,
+    title: readActionTitle(action.payload, action.type),
+    status: action.status,
+  };
+}
+
 function toDetail(
   conversation: ConversationWithMessages,
 ): ConversationDetailResponse {
   return {
     ...toConversationResponse(conversation),
     messages: conversation.messages.map(toMessageResponse),
+    actions: (conversation.pendingActions ?? []).map(toPendingView),
   };
 }
 

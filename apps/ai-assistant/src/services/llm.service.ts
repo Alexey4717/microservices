@@ -9,6 +9,8 @@ import type {
   ChatCompletionTool,
 } from 'openai/resources/chat/completions';
 
+import { embedText } from './embeddings';
+import { clampTemperature } from './temperature';
 import { estimateTokens } from './token-budget.service';
 import type { StoredToolCall } from './transcript';
 
@@ -31,8 +33,15 @@ interface PendingToolCall {
 export interface LlmTurnRequest {
   messages: ChatCompletionMessageParam[];
   tools: ChatCompletionTool[];
+  temperature?: number;
   signal?: AbortSignal;
   onTextDelta?: (delta: string) => void;
+}
+
+export interface LlmSummaryRequest {
+  instruction: string;
+  content: string;
+  signal?: AbortSignal;
 }
 
 export interface LlmTurn {
@@ -49,6 +58,9 @@ export class LlmService {
   private readonly model: string;
   private readonly contextTokens: number;
   private readonly maxOutputTokens: number;
+  private readonly defaultTemperature: number;
+  private readonly embedModel: string;
+  private readonly embedDimensions: number;
 
   constructor(configService: ConfigService) {
     this.client = new OpenAI({
@@ -61,6 +73,11 @@ export class LlmService {
       configService,
       'LLM_MAX_OUTPUT_TOKENS',
     );
+    this.defaultTemperature = readTemperature(configService);
+    this.embedModel =
+      configService.get<string>('LLM_EMBED_MODEL') || 'nomic-embed-text';
+    this.embedDimensions =
+      readOptionalPositiveInt(configService, 'LLM_EMBED_DIMENSIONS') ?? 768;
   }
 
   async createTurn(request: LlmTurnRequest): Promise<LlmTurn> {
@@ -70,6 +87,10 @@ export class LlmService {
       stream: true,
       stream_options: { include_usage: true },
       max_tokens: this.maxOutputTokens,
+      temperature: clampTemperature(
+        request.temperature ?? this.defaultTemperature,
+        this.defaultTemperature,
+      ),
       options: { num_ctx: this.contextTokens },
     };
     if (request.tools.length > 0) {
@@ -134,6 +155,22 @@ export class LlmService {
       streamedText: sawToolCall ? false : streamedText,
     };
   }
+
+  summarize(request: LlmSummaryRequest): Promise<LlmTurn> {
+    return this.createTurn({
+      messages: [
+        { role: 'system', content: request.instruction },
+        { role: 'user', content: request.content },
+      ],
+      tools: [],
+      temperature: 0.2,
+      signal: request.signal,
+    });
+  }
+
+  embed(input: string): Promise<number[] | null> {
+    return embedText(this.client, this.embedModel, this.embedDimensions, input);
+  }
 }
 
 function absorbToolCallDeltas(
@@ -163,10 +200,33 @@ function absorbToolCallDeltas(
 }
 
 function readPositiveInt(configService: ConfigService, key: string): number {
-  const value = configService.get<number | string>(key);
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
+  const parsed = readOptionalPositiveInt(configService, key);
+  if (parsed === undefined) {
     throw new Error(`Не задан ${key}`);
   }
   return parsed;
+}
+
+function readOptionalPositiveInt(
+  configService: ConfigService,
+  key: string,
+): number | undefined {
+  const value = configService.get<number | string>(key);
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return parsed;
+}
+
+function readTemperature(configService: ConfigService): number {
+  const value = configService.get<number | string>('LLM_TEMPERATURE');
+  if (value === undefined || value === null || value === '') {
+    return 0.2;
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return clampTemperature(parsed, 0.2);
 }

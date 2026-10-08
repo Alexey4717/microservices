@@ -10,11 +10,18 @@ import { DomainGrpcModule } from './grpc/domain-grpc.module';
 import { ConversationsService } from './services/conversations.service';
 import { LlmService } from './services/llm.service';
 import { PaymentsTool } from './services/payments-tool';
+import { PendingActionsService } from './services/pending-actions.service';
 import { PrismaService } from './services/prisma.service';
 import { ProfileTool } from './services/profile-tool';
-import { EmptyRetrieval, RetrievalPort } from './services/retrieval.port';
+import {
+  ProposeCheckoutTool,
+  ProposeNavigationTool,
+  ProposeUpdateNameTool,
+} from './services/propose-tools';
+import { RetrievalPort } from './services/retrieval.port';
 import { TokenBudgetService } from './services/token-budget.service';
 import { ToolRegistry } from './services/tool-registry';
+import { VectorRetrieval } from './services/vector-retrieval';
 
 @Module({
   imports: [
@@ -32,11 +39,15 @@ import { ToolRegistry } from './services/tool-registry';
     TokenBudgetService,
     ProfileTool,
     PaymentsTool,
+    ProposeCheckoutTool,
+    ProposeNavigationTool,
+    ProposeUpdateNameTool,
     ToolRegistry,
+    PendingActionsService,
     ConversationsService,
     {
       provide: RetrievalPort,
-      useClass: EmptyRetrieval,
+      useClass: VectorRetrieval,
     },
     {
       provide: APP_INTERCEPTOR,

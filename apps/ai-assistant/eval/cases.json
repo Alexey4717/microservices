@@ -1,0 +1,47 @@
+[
+  {
+    "id": "open-profile",
+    "question": "Открой страницу профиля",
+    "pagePath": "/",
+    "expectTool": "propose_navigation",
+    "expectPath": "/profile"
+  },
+  {
+    "id": "buy-premium",
+    "question": "Хочу оплатить PREMIUM картой Stripe",
+    "pagePath": "/profile",
+    "expectTool": "propose_checkout",
+    "expectProvider": "STRIPE"
+  },
+  {
+    "id": "rename",
+    "question": "Смени моё имя на Алекс",
+    "pagePath": "/profile",
+    "expectTool": "propose_update_name",
+    "expectName": "Алекс"
+  },
+  {
+    "id": "who-am-i",
+    "question": "Как меня зовут и какой у меня тариф?",
+    "pagePath": "/profile",
+    "expectTool": "get_my_profile"
+  },
+  {
+    "id": "my-payments",
+    "question": "Покажи мои последние платежи",
+    "pagePath": "/profile",
+    "expectTool": "list_my_payments"
+  },
+  {
+    "id": "where-videos",
+    "question": "Есть ли в приложении раздел видео и что там сейчас?",
+    "pagePath": "/",
+    "expectSource": "videos.md"
+  },
+  {
+    "id": "premium-price",
+    "question": "Сколько стоит PREMIUM и чем можно оплатить?",
+    "pagePath": "/profile",
+    "expectSource": "payments.md"
+  }
+]

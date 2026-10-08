@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import {
-  type AssistantTool,
-  EMPTY_TOOL_PARAMETERS,
-  type ToolSession,
-} from './tool-types';
+import { GET_MY_PROFILE_TOOL } from './tool-definitions';
+import { type AssistantTool, type ToolSession } from './tool-types';
 import { UsersGrpcService } from './users-grpc.service';
 
 export interface ProfileSnapshot {
@@ -35,10 +32,9 @@ export async function executeGetMyProfile(
 
 @Injectable()
 export class ProfileTool implements AssistantTool {
-  readonly name = 'get_my_profile';
-  readonly description =
-    'Профиль текущего пользователя сессии. Аргументы не принимаются: user id из текста модели игнорируется.';
-  readonly parameters = EMPTY_TOOL_PARAMETERS;
+  readonly name = GET_MY_PROFILE_TOOL.name;
+  readonly description = GET_MY_PROFILE_TOOL.description;
+  readonly parameters = GET_MY_PROFILE_TOOL.parameters;
 
   constructor(private readonly users: UsersGrpcService) {}
 

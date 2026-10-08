@@ -2,6 +2,7 @@ import { UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   Args,
+  Float,
   ID,
   Mutation,
   Query,
@@ -12,9 +13,12 @@ import {
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { GqlAuthGuard } from '../guards/gql-auth.guard';
 import {
+  mapAssistantEvents,
+  toAiActionResult,
   toAiConversationDetailModel,
   toAiConversationModel,
 } from '../mappers/ai-assistant.mapper';
+import { AiActionResultModel } from '../models/ai-action.model';
 import { AiAssistantReplyModel } from '../models/ai-assistant-reply.model';
 import {
   AiConversationDetailModel,
@@ -68,6 +72,34 @@ export class AiAssistantResolver {
     return toAiConversationModel(result);
   }
 
+  @Mutation(() => AiActionResultModel)
+  @UseGuards(GqlAuthGuard)
+  async confirmAiAction(
+    @Args('actionId', { type: () => ID }) actionId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<AiActionResultModel> {
+    const result = await this.aiAssistantGrpc.confirmAction(
+      actionId,
+      this.internalToken(),
+      user.userId,
+    );
+    return toAiActionResult(result);
+  }
+
+  @Mutation(() => AiActionResultModel)
+  @UseGuards(GqlAuthGuard)
+  async rejectAiAction(
+    @Args('actionId', { type: () => ID }) actionId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<AiActionResultModel> {
+    const result = await this.aiAssistantGrpc.rejectAction(
+      actionId,
+      this.internalToken(),
+      user.userId,
+    );
+    return toAiActionResult(result);
+  }
+
   @Subscription(() => AiAssistantReplyModel, {
     resolve: (payload: AiAssistantReplyModel) => payload,
   })
@@ -76,12 +108,20 @@ export class AiAssistantResolver {
     @Args('conversationId', { type: () => ID }) conversationId: string,
     @Args('content') content: string,
     @CurrentUser() user: AuthenticatedUser,
+    @Args('pagePath', { type: () => String, nullable: true })
+    pagePath?: string | null,
+    @Args('temperature', { type: () => Float, nullable: true })
+    temperature?: number | null,
   ): AsyncIterable<AiAssistantReplyModel> {
-    return this.aiAssistantGrpc.sendMessage(
-      conversationId,
-      content,
-      this.internalToken(),
-      user.userId,
+    return mapAssistantEvents(
+      this.aiAssistantGrpc.sendMessage(
+        conversationId,
+        content,
+        this.internalToken(),
+        user.userId,
+        pagePath,
+        temperature,
+      ),
     );
   }
 

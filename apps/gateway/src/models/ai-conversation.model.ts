@@ -1,5 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 
+import { AiPendingActionModel } from './ai-action.model';
+
 @ObjectType()
 export class AiMessageModel {
   @Field(() => ID)
@@ -49,4 +51,7 @@ export class AiConversationDetailModel {
 
   @Field(() => [AiMessageModel])
   messages!: AiMessageModel[];
+
+  @Field(() => [AiPendingActionModel])
+  actions!: AiPendingActionModel[];
 }

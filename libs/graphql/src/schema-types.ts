@@ -31,16 +31,35 @@ export type Scalars = {
 
 export type AccountTier = 'BASE' | 'PREMIUM';
 
+export type AiActionCardModel = {
+  __typename?: 'AiActionCardModel';
+  id: Scalars['ID']['output'];
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type AiActionResultModel = {
+  __typename?: 'AiActionResultModel';
+  actionId: Scalars['ID']['output'];
+  checkoutUrl: Maybe<Scalars['String']['output']>;
+  path: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
 export type AiAssistantReplyModel = {
   __typename?: 'AiAssistantReplyModel';
+  action: Maybe<AiActionCardModel>;
   conversationId: Scalars['ID']['output'];
   delta: Scalars['String']['output'];
   done: Scalars['Boolean']['output'];
   messageId: Scalars['ID']['output'];
+  toolName: Maybe<Scalars['String']['output']>;
 };
 
 export type AiConversationDetailModel = {
   __typename?: 'AiConversationDetailModel';
+  actions: Array<AiPendingActionModel>;
   createdAt: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   messages: Array<AiMessageModel>;
@@ -63,6 +82,14 @@ export type AiMessageModel = {
   id: Scalars['ID']['output'];
   role: Scalars['String']['output'];
   toolName: Maybe<Scalars['String']['output']>;
+};
+
+export type AiPendingActionModel = {
+  __typename?: 'AiPendingActionModel';
+  id: Scalars['ID']['output'];
+  status: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type AuthPayload = {
@@ -96,6 +123,7 @@ export type LogoutInput = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  confirmAiAction: AiActionResultModel;
   createAiConversation: AiConversationModel;
   createCheckout: CheckoutPayload;
   createTelegramLink: TelegramLink;
@@ -104,8 +132,13 @@ export type Mutation = {
   logout: Scalars['Boolean']['output'];
   refresh: AuthPayload;
   register: AuthPayload;
+  rejectAiAction: AiActionResultModel;
   updateMe: UserModel;
   uploadAvatar: UserModel;
+};
+
+export type MutationConfirmAiActionArgs = {
+  actionId: Scalars['ID']['input'];
 };
 
 export type MutationCreateCheckoutArgs = {
@@ -130,6 +163,10 @@ export type MutationRefreshArgs = {
 
 export type MutationRegisterArgs = {
   input: RegisterInput;
+};
+
+export type MutationRejectAiActionArgs = {
+  actionId: Scalars['ID']['input'];
 };
 
 export type MutationUpdateMeArgs = {
@@ -192,6 +229,8 @@ export type Subscription = {
 export type SubscriptionAiAssistantReplyArgs = {
   content: Scalars['String']['input'];
   conversationId: Scalars['ID']['input'];
+  pagePath: InputMaybe<Scalars['String']['input']>;
+  temperature: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type TelegramLink = {

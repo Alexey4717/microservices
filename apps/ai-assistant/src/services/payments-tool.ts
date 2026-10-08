@@ -3,11 +3,8 @@ import { Injectable } from '@nestjs/common';
 import type { PaymentResponse } from '@libs/proto';
 
 import { PaymentsGrpcService } from './payments-grpc.service';
-import {
-  type AssistantTool,
-  EMPTY_TOOL_PARAMETERS,
-  type ToolSession,
-} from './tool-types';
+import { LIST_MY_PAYMENTS_TOOL } from './tool-definitions';
+import { type AssistantTool, type ToolSession } from './tool-types';
 
 export const PAYMENTS_TOOL_LIMIT = 20;
 
@@ -34,10 +31,9 @@ export async function executeListMyPayments(
 
 @Injectable()
 export class PaymentsTool implements AssistantTool {
-  readonly name = 'list_my_payments';
-  readonly description =
-    'Платежи текущего пользователя сессии, не больше 20 последних. Аргументы не принимаются: user id из текста модели игнорируется.';
-  readonly parameters = EMPTY_TOOL_PARAMETERS;
+  readonly name = LIST_MY_PAYMENTS_TOOL.name;
+  readonly description = LIST_MY_PAYMENTS_TOOL.description;
+  readonly parameters = LIST_MY_PAYMENTS_TOOL.parameters;
 
   constructor(private readonly payments: PaymentsGrpcService) {}
 

@@ -7,6 +7,8 @@ service AiAssistantService {
   rpc ListConversations (ListConversationsRequest) returns (ListConversationsResponse);
   rpc GetConversation (GetConversationRequest) returns (ConversationDetailResponse);
   rpc SendMessage (SendMessageRequest) returns (stream SendMessageEvent);
+  rpc ConfirmAction (ConfirmActionRequest) returns (ActionResult);
+  rpc RejectAction (RejectActionRequest) returns (ActionResult);
 }
 
 message CreateConversationRequest {}
@@ -37,17 +39,33 @@ message MessageResponse {
   string created_at = 6;
 }
 
+message PendingActionView {
+  string id = 1;
+  string type = 2;
+  string title = 3;
+  string status = 4;
+}
+
 message ConversationDetailResponse {
   string id = 1;
   string title = 2;
   string created_at = 3;
   string updated_at = 4;
   repeated MessageResponse messages = 5;
+  repeated PendingActionView actions = 6;
 }
 
 message SendMessageRequest {
   string conversation_id = 1;
   string content = 2;
+  string page_path = 3;
+  string temperature = 4;
+}
+
+message ActionCard {
+  string id = 1;
+  string type = 2;
+  string title = 3;
 }
 
 message SendMessageEvent {
@@ -55,4 +73,22 @@ message SendMessageEvent {
   string message_id = 2;
   string delta = 3;
   bool done = 4;
+  string tool_name = 5;
+  ActionCard action = 6;
+}
+
+message ConfirmActionRequest {
+  string action_id = 1;
+}
+
+message RejectActionRequest {
+  string action_id = 1;
+}
+
+message ActionResult {
+  string action_id = 1;
+  string type = 2;
+  string status = 3;
+  string checkout_url = 4;
+  string path = 5;
 }

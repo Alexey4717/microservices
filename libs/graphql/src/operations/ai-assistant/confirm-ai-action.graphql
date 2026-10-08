@@ -1,0 +1,9 @@
+mutation ConfirmAiAction($actionId: ID!) {
+  confirmAiAction(actionId: $actionId) {
+    actionId
+    type
+    status
+    checkoutUrl
+    path
+  }
+}

@@ -7,12 +7,18 @@ import { type Observable, lastValueFrom } from 'rxjs';
 import { PAYMENTS_GRPC_CLIENT, createInternalMetadata } from '@libs/common';
 import { PAYMENTS_SERVICE_NAME } from '@libs/proto';
 import type {
+  CheckoutResponse,
+  CreateCheckoutRequest,
   ListMyPaymentsRequest,
   ListMyPaymentsResponse,
   PaymentResponse,
 } from '@libs/proto';
 
 interface PaymentsGrpcClient {
+  createCheckout(
+    data: CreateCheckoutRequest,
+    metadata: Metadata,
+  ): Observable<CheckoutResponse>;
   listMyPayments(
     data: ListMyPaymentsRequest,
     metadata: Metadata,
@@ -30,6 +36,20 @@ export class PaymentsGrpcService implements OnModuleInit {
   onModuleInit(): void {
     this.payments = this.client.getService<PaymentsGrpcClient>(
       PAYMENTS_SERVICE_NAME,
+    );
+  }
+
+  createCheckout(
+    userId: string,
+    internalToken: string,
+    provider: string,
+    productCode: string,
+  ): Promise<CheckoutResponse> {
+    return lastValueFrom(
+      this.payments.createCheckout(
+        { provider, productCode },
+        createInternalMetadata(internalToken, userId),
+      ),
     );
   }
 
