@@ -5,6 +5,7 @@ import type { Request, Response } from 'express';
 
 import { GithubAuthGuard } from '../guards/github-auth.guard';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
+import { oauthSuccessRedirectFor } from '../helpers/oauth-failure-redirect';
 import { AuthService } from '../services/auth.service';
 import type { OauthProfile } from '../types/auth.types';
 import { renderOauthSuccessHtml } from './oauth-success.html';
@@ -26,7 +27,7 @@ export class AuthController {
     @Req() req: Request & { user: OauthProfile },
     @Res() res: Response,
   ): Promise<void> {
-    await this.finishOauth(req.user, res);
+    await this.finishOauth(req.user, req, res);
   }
 
   @Get('github')
@@ -39,17 +40,16 @@ export class AuthController {
     @Req() req: Request & { user: OauthProfile },
     @Res() res: Response,
   ): Promise<void> {
-    await this.finishOauth(req.user, res);
+    await this.finishOauth(req.user, req, res);
   }
 
   private async finishOauth(
     profile: OauthProfile,
+    req: Request,
     res: Response,
   ): Promise<void> {
     const tokens = await this.authService.oauthUpsert(profile);
-    const redirectBase = this.configService.get<string>(
-      'OAUTH_SUCCESS_REDIRECT_URL',
-    );
+    const redirectBase = oauthSuccessRedirectFor(req, this.configService);
 
     if (redirectBase) {
       const url = new URL(redirectBase);

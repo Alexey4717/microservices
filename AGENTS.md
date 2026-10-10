@@ -1,6 +1,6 @@
 # Инструкции для агентов
 
-Монорепозиторий NestJS: публичный GraphQL на `apps/gateway`, доменные сервисы в `apps/*`, контракты в `libs/proto`, общее — в `libs/common`, клиентский GraphQL — в `libs/graphql`. Фронт — Next.js в `apps/web-client` (pnpm workspace-пакет, не Nest-приложение). Telegram Mini App — Vite + React в `apps/telegram-mini-app` (тоже pnpm workspace-пакет, не Nest).
+Монорепозиторий NestJS: публичный GraphQL на `apps/gateway`, доменные сервисы в `apps/*`, контракты в `libs/proto`, общее — в `libs/common`, клиентский GraphQL — в `libs/graphql`. Фронт — Next.js в `apps/web-client` (pnpm workspace-пакет, не Nest-приложение). Telegram Mini App — Vite + React в `apps/telegram-mini-app` (тоже pnpm workspace-пакет, не Nest). Мобильное приложение — Expo React Native в `apps/mobile` (пакет `mobile`, не Nest).
 
 ## Команды
 
@@ -36,7 +36,9 @@ pnpm run start:all
 
 Telegram Mini App (не Nest, не Next, не в `nest-cli.json`): пакет `apps/telegram-mini-app` (имя `telegram-mini-app`), Vite + React, порт **4001**. Запуск `pnpm run start:telegram-mini`. В `start:all` не входит. GraphQL — относительный `/graphql` (Vite проксирует на gateway `:3000`). Линт: `pnpm run lint:telegram-mini`. Формат: `pnpm run format:telegram-mini`. Из Mini App импорт `@libs/<name>` разрешён, только если `telegram-mini-app` есть в `consumers` (сейчас `@libs/graphql`).
 
-Если порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 50051 / 50052 / 50053 / 50054 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
+Мобильное приложение (не Nest, не Next, не в `nest-cli.json`): пакет `apps/mobile` (имя `mobile`), Expo Router, порт **8081**. Запуск `pnpm run start:mobile`. В `start:all` не входит. GraphQL — `EXPO_PUBLIC_GRAPHQL_URL`, по умолчанию `http://10.0.2.2:3000/graphql` (эмулятор Android). Линт: `pnpm run lint:mobile`. Формат: `pnpm run format:mobile`. Сборка: `pnpm run build:mobile`. Импорт `@libs/<name>` разрешён, только если `mobile` есть в `consumers` (сейчас `@libs/graphql`). ИИ-ассистента в приложении нет.
+
+Если порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 8081 / 50051 / 50052 / 50053 / 50054 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` / `start:mobile` или процессы на этих портах вручную.
 
 ## Архитектура
 
@@ -49,7 +51,7 @@ Telegram Mini App (не Nest, не Next, не в `nest-cli.json`): пакет `a
 - Не читать и не коммитить `.env`, `dev.env`, `config.json`, `dev.example.env`, `config.example.json`. Шаблон — `.env.example`.
 - Документация для пользователя — на русском.
 - Runtime — CommonJS; относительные импорты без расширений файлов.
-- Из Nest-приложений импортировать libs как `@libs/common` / `@libs/proto`, не `../../../libs`. Кто имеет право на `@libs/<name>`, задаёт поле `consumers` в `package.json` библиотеки; ESLint это проверяет. `@libs/common` — `@apps/*` и `@libs/proto`, `@libs/proto` — `@apps/*`, `@libs/graphql` — `web-client` и `telegram-mini-app`.
+- Из Nest-приложений импортировать libs как `@libs/common` / `@libs/proto`, не `../../../libs`. Кто имеет право на `@libs/<name>`, задаёт поле `consumers` в `package.json` библиотеки; ESLint это проверяет. `@libs/common` — `@apps/*` и `@libs/proto`, `@libs/proto` — `@apps/*`, `@libs/graphql` — `web-client`, `telegram-mini-app` и `mobile`.
 
 ## Проверка
 
@@ -58,7 +60,7 @@ pnpm lint
 pnpm run build:services
 ```
 
-Отдельный сервис по-прежнему собирается прежними командами: `pnpm run build:gateway`, `build:users`, `build:files`, `build:payments`, `build:ai-assistant` и остальные `build:<name>`. `pnpm run build` — Turbo: `build:services` плюс сборки `web-client` и `telegram-mini-app`.
+Отдельный сервис по-прежнему собирается прежними командами: `pnpm run build:gateway`, `build:users`, `build:files`, `build:payments`, `build:ai-assistant` и остальные `build:<name>`. `pnpm run build` — Turbo: `build:services` плюс сборки `web-client`, `telegram-mini-app` и `mobile`.
 
 Перед сдачей UI/HTTP — `pnpm run start:all`, затем GraphQL register → login → me.
 

@@ -46,6 +46,8 @@ pnpm run start:gateway
 
 После успеха, если задан `OAUTH_SUCCESS_REDIRECT_URL` (для веб-клиента: `http://localhost:4000/auth/callback`), gateway редиректит туда с токенами в hash. Отмена согласия на callback уводит на `{origin}/login?error=oauth`.
 
+`GET /auth/google?client=mobile` и `GET /auth/github?client=mobile` передают провайдеру фиксированный OAuth `state=mobile` (не произвольный URL). Если на callback `state=mobile`, успех редиректит на `MOBILE_OAUTH_SUCCESS_REDIRECT_URL` (если переменная пустая — `mobile://auth/callback`) с `accessToken` и `refreshToken` в hash. Ошибка или отмена для этого клиента ведёт на `mobile://login?error=oauth`. Без `client=mobile` веб-поведение не меняется.
+
 Для туннеля запустите `pnpm run ngrok:dev` в отдельном терминале и задайте `OAUTH_CALLBACK_BASE_URL` на публичный **https**-URL ngrok целиком, включая `.ngrok-free.app`.
 
 ## gRPC-клиент

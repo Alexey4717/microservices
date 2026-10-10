@@ -24,14 +24,15 @@ apps/telegram     — HTTP webhook Telegram + gRPC-клиент к users (без
 apps/mailer       — consumer RabbitMQ, SMTP (nodemailer)
 apps/web-client   — Next.js (браузерный клиент к GraphQL gateway)
 apps/telegram-mini-app — Vite + React Mini App (порт 4001, не Nest)
+apps/mobile            — Expo React Native (порт 8081, не Nest, без ИИ-ассистента)
 libs/proto        — protobuf-контракты (`@libs/proto`)
 libs/common       — токены клиентов, события, маппинг RpcException (`@libs/common`)
-libs/graphql      — схема gateway, операции и codegen для web-client и Mini App (`@libs/graphql`)
+libs/graphql      — схема gateway, операции и codegen для web-client, Mini App и mobile (`@libs/graphql`)
 ```
 
 ## Как запустить
 
-1. Скопируйте `.env.example` в `.env` и заполните значения (не коммитьте `.env`). Если `.env` уже есть — добавьте новые ключи `FILES_*`, `S3_*` и `PAYMENTS_*` / Stripe / PayPal из шаблона (`FILES_GRPC_URL` и `PAYMENTS_GRPC_URL` нужны и gateway).
+1. Скопируйте `.env.example` в `.env` и заполните значения (не коммитьте `.env`). Если `.env` уже есть — добавьте новые ключи `FILES_*`, `S3_*`, `PAYMENTS_*` / Stripe / PayPal и `MOBILE_OAUTH_SUCCESS_REDIRECT_URL` из шаблона (`FILES_GRPC_URL` и `PAYMENTS_GRPC_URL` нужны и gateway).
 2. Установите зависимости: `pnpm install`.
 3. Поднимите инфраструктуру:
 
@@ -71,11 +72,11 @@ pnpm run start:all
 
 Новый Nest-сервис: `pnpm exec nest generate app <name>`, такой же `apps/<name>/package.json` (имя `@apps/<name>`, скрипты `dev` / `build` / `build:prod` / `start:prod` через `pnpm -w`, без своих dependencies), корневые алиасы `start:<name>` / `build:<name>` / `build:<name>:prod` / `start:<name>:prod` и строка в `concurrently` в `start:all` / `start:all:prod`. Новый веб или Expo: каталог в `apps/` со скриптами `dev`, `build` и `lint`, игнор в корневом ESLint и исключение каталога из inputs задачи `build:services` в `turbo.json`.
 
-Проверка бэкенда: `pnpm run build:services` (все Nest-сервисы по очереди) или прежние `pnpm run build:gateway` и аналоги. `pnpm run build` дополнительно собирает `web-client` и Telegram Mini App через Turbo; правка одного фронта другой фронт и бэкенд не пересобирает.
+Проверка бэкенда: `pnpm run build:services` (все Nest-сервисы по очереди) или прежние `pnpm run build:gateway` и аналоги. `pnpm run build` дополнительно собирает `web-client`, Telegram Mini App и Expo-приложение `mobile` через Turbo; правка одного фронта другой фронт и бэкенд не пересобирает.
 
-Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 50051 / 50052 / 50053 / 50054 заняты) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` или процессы на этих портах вручную.
+Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 8081 / 50051 / 50052 / 50053 / 50054 заняты) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` / `start:mobile` или процессы на этих портах вручную.
 
-По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram`, `pnpm run start:ai-assistant` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит).
+По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram`, `pnpm run start:ai-assistant` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит). Мобильное приложение: `pnpm run start:mobile` (Expo на порту 8081, в `start:all` не входит).
 
 Публичный HTTPS-туннель ngrok **не** стартует вместе со стеком. Скрипт поднимает **пакетный** `ngrok` из `node_modules`, а не системный агент: глобальный `ngrok config` ему не подходит, нужен `NGROK_AUTHTOKEN` в `.env` (см. `.env.example`). В отдельном терминале:
 
@@ -98,6 +99,7 @@ pnpm run ngrok:dev -- 4001
 | GraphQL Playground | `http://localhost:3000/graphql` | IDE в режиме development                                                                    |
 | Web client         | `http://localhost:4000`         | Next.js, `pnpm run start:web`                                                               |
 | Telegram Mini App  | `http://localhost:4001`         | Vite + React, `pnpm run start:telegram-mini`                                                |
+| Mobile             | порт `8081`                     | Expo React Native, `pnpm run start:mobile` (`apps/mobile`)                                  |
 | Mailer health      | `http://127.0.0.1:3001/health`  | `MAILER_HOST`:`MAILER_PORT` (по умолчанию localhost), внутренний HTTP                       |
 | Files health       | `http://127.0.0.1:3002/health`  | `FILES_HOST`:`FILES_PORT` (по умолчанию localhost), внутренний HTTP                         |
 | Payments health    | `http://127.0.0.1:3003/health`  | `PAYMENTS_HOST`:`PAYMENTS_PORT` (по умолчанию localhost), webhook HTTP                      |
@@ -313,6 +315,8 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 
 Кнопки Google / GitHub на `/login` и `/register` ведут на эти REST-маршруты gateway (полный редирект браузера, не GraphQL). Callback у провайдера: `http://localhost:3000/auth/google/callback` и `http://localhost:3000/auth/github/callback`. После успеха gateway отдаёт HTML с токенами или редирект на `OAUTH_SUCCESS_REDIRECT_URL` (по умолчанию `http://localhost:4000/auth/callback`, токены в hash). Фронт читает hash, кладёт refresh в httpOnly-cookie и открывает `/`. Если пользователь отменил согласие, callback редиректит на `/login?error=oauth`.
 
+Expo-приложение открывает те же маршруты с `?client=mobile`. Gateway ставит OAuth `state=mobile` и после успеха редиректит на `MOBILE_OAUTH_SUCCESS_REDIRECT_URL` (`mobile://auth/callback`, токены в hash). Отмена — `mobile://login?error=oauth`. Без `client=mobile` сайт работает как раньше. Return URL Stripe/PayPal остаётся на сайте (`CORS_ORIGIN/payments/:id`). Подробности: `apps/mobile/README.md`.
+
 Логин/пароль работают без OAuth-секретов. Чтобы OAuth заработал:
 
 1. Создайте приложения в Google Cloud / GitHub.
@@ -322,7 +326,7 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 
 ## Инварианты
 
-- Новый микросервис — только `pnpm exec nest generate app <name>`. Фронт `apps/web-client` — Next.js, не Nest. Mini App `apps/telegram-mini-app` — Vite + React, не Nest.
+- Новый микросервис — только `pnpm exec nest generate app <name>`. Фронт `apps/web-client` — Next.js, не Nest. Mini App `apps/telegram-mini-app` — Vite + React, не Nest. Мобильное приложение `apps/mobile` — Expo, не Nest.
 - Публичный API — только GraphQL-резолверы gateway. Исключения REST: OAuth на gateway, webhook-и payments (`/webhooks/stripe`, `/webhooks/paypal` на payments) и Telegram webhook (`/webhooks/telegram` на сервисе telegram, не на gateway).
 - Синхронно — gRPC, асинхронно — RabbitMQ.
 - У каждого сервиса своя Prisma-БД (логическая БД в одном Postgres).
@@ -340,6 +344,7 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 - `pnpm run start:gateway` / `pnpm run start:users` / `pnpm run start:mailer` / `pnpm run start:files` / `pnpm run start:payments` / `pnpm run start:telegram` / `pnpm run start:ai-assistant` — по отдельности (watch)
 - `pnpm run start:web` — Next.js на порту 4000 (`apps/web-client`)
 - `pnpm run start:telegram-mini` — Vite Mini App на порту 4001 (`apps/telegram-mini-app`), в `start:all` не входит
+- `pnpm run start:mobile` — Expo на порту 8081 (`apps/mobile`), в `start:all` не входит
 - `pnpm run ngrok:dev` — туннель ngrok (отдельный терминал, не входит в `start:all`): порт = аргумент CLI / `PORT` / 3000; для Mini App — `-- 4001`
 - `pnpm run start:prod` / `pnpm run start:gateway:prod` / `pnpm run start:users:prod` / `pnpm run start:mailer:prod` / `pnpm run start:files:prod` / `pnpm run start:payments:prod` / `pnpm run start:telegram:prod` / `pnpm run start:ai-assistant:prod` / `pnpm run start:web:prod` — по отдельности из сборки
 - `pnpm run prisma:generate` — клиенты users, gateway, files, payments и ai-assistant
@@ -348,15 +353,17 @@ Mini App (`apps/telegram-mini-app`, порт 4001): `pnpm run start:telegram-min
 - `pnpm run prisma:migrate:files` — миграции БД `files`
 - `pnpm run prisma:migrate:payments` — миграции БД `payments`
 - `pnpm run prisma:migrate:ai-assistant` — миграции БД `ai_assistant`
-- `pnpm run build` — Turbo: последовательный Nest (`build:services`, кэш каталога `dist/**`) и отдельные сборки `web-client` / `telegram-mini-app`
+- `pnpm run build` — Turbo: последовательный Nest (`build:services`, кэш каталога `dist/**`) и отдельные сборки `web-client` / `telegram-mini-app` / `mobile`
 - `pnpm run build:services` — все Nest-сервисы строго по очереди, с sourceMap
 - `pnpm run build:services:prod` — то же для prod-сборки, без кэша Turbo
 - `pnpm run build:gateway` / `pnpm run build:users` / `pnpm run build:mailer` / `pnpm run build:files` / `pnpm run build:payments` / `pnpm run build:telegram` / `pnpm run build:ai-assistant` — один сервис, с sourceMap
 - `pnpm run build:gateway:prod` / `pnpm run build:users:prod` / `pnpm run build:mailer:prod` / `pnpm run build:files:prod` / `pnpm run build:payments:prod` / `pnpm run build:telegram:prod` / `pnpm run build:ai-assistant:prod` — один сервис, без `.d.ts` и `.js.map`
 - `pnpm run build:web` — сборка Next.js
 - `pnpm run build:telegram-mini` — сборка Mini App
+- `pnpm run build:mobile` — сборка Expo (`expo export`)
 - `pnpm codegen` — типы и документы `@libs/graphql` из `libs/graphql/schema.graphql`
 - `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда
 - `pnpm run lint:web` — ESLint `apps/web-client`
 - `pnpm run lint:telegram-mini` — ESLint `apps/telegram-mini-app`
-- `pnpm run format:web` / `pnpm run format:telegram-mini` — Prettier фронтов
+- `pnpm run lint:mobile` — ESLint `apps/mobile`
+- `pnpm run format:web` / `pnpm run format:telegram-mini` / `pnpm run format:mobile` — Prettier фронтов

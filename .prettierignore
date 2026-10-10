@@ -2,4 +2,5 @@ dist
 coverage
 apps/web-client
 apps/telegram-mini-app
+apps/mobile
 apps/**/prisma/generated

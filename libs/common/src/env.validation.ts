@@ -121,6 +121,10 @@ export class GatewayEnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  MOBILE_OAUTH_SUCCESS_REDIRECT_URL?: string;
+
+  @IsOptional()
+  @IsString()
   GOOGLE_CLIENT_ID?: string;
 
   @IsOptional()

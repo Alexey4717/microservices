@@ -11,6 +11,7 @@
         "apps/**",
         "!apps/web-client/**",
         "!apps/telegram-mini-app/**",
+        "!apps/mobile/**",
         "libs/**",
         "!libs/graphql/**",
         "scripts/copy-proto.mjs",
