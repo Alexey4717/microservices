@@ -1,0 +1,6 @@
+mutation CreateVideoUpload($input: CreateVideoUploadInput!) {
+  createVideoUpload(input: $input) {
+    videoId
+    uploadUrl
+  }
+}

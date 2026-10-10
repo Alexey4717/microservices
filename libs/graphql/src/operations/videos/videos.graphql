@@ -1,0 +1,12 @@
+query Videos {
+  videos {
+    id
+    title
+    url
+    author {
+      id
+      name
+      avatarUrl
+    }
+  }
+}

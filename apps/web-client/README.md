@@ -22,17 +22,27 @@ Refresh-токен живёт в httpOnly-cookie `refresh-token`. Её **выс�
 
 На `/profile` можно купить PREMIUM (9,99 USD) через hosted checkout Stripe или PayPal. Клиент вызывает GraphQL `createCheckout({ provider })` и делает редирект на `checkoutUrl`. Stripe.js и PayPal SDK **не** подключаются. После оплаты провайдер возвращает на `{CORS_ORIGIN}/payments/:id` (наш UUID платежа, не Stripe `CHECKOUT_SESSION_ID`; origin — `CORS_ORIGIN` в корневом `.env`, тот же, что для CORS gateway). Страница заказа запрашивает GraphQL `payment(id)` и, пока статус `PENDING`, опрашивает его примерно раз в 2 секунды (без SSE и подписок). Терминальные статусы: «Оплата прошла» / «Оплата не прошла» / «Оплата отменена». Всегда есть ссылка «Вернуться в профиль».
 
+## Видео
+
+На `/videos` каталог карточек: первый кадр даёт `<video muted preload="metadata">` с публичного URL, под ним название и автор. Пустой список и ссылка «Загрузить видео» ведут на `/videos/new`.
+
+Форма проверяет MIME (`video/mp4`, `video/webm`) и размер (до 100 МБ) до запроса. Дальше `createVideoUpload`, `PUT` файла на presigned URL с тем же `Content-Type`, затем `completeVideoUpload` и переход на `/videos/[id]`.
+
+Страница ролика играет `<video controls playsInline>` **без** атрибута `crossorigin`: байты идут в MinIO запросами `Range` (ответ `206`), gateway их не проксирует. Рядом название, описание и автор. Если ролика нет — блок «Видео не найдено».
+
 ## Маршруты
 
-| Путь             | Назначение                                                  |
-| ---------------- | ----------------------------------------------------------- |
-| `/login`         | Вход по email и паролю или через Google / GitHub            |
-| `/register`      | Регистрация (имя необязательно) или OAuth                   |
-| `/auth/callback` | Финиш OAuth: hash → cookie `refresh-token`, редирект на `/` |
-| `/`              | Главная (нужна cookie `refresh-token`)                      |
-| `/profile`       | RSC `Me` + `myPayments`, аватар, Telegram, покупка PREMIUM  |
-| `/payments/[id]` | Статус заказа: GraphQL `payment(id)`, опрос при `PENDING`   |
-| `/videos`        | Заглушка                                                    |
+| Путь             | Назначение                                                    |
+| ---------------- | ------------------------------------------------------------- |
+| `/login`         | Вход по email и паролю или через Google / GitHub              |
+| `/register`      | Регистрация (имя необязательно) или OAuth                     |
+| `/auth/callback` | Финиш OAuth: hash → cookie `refresh-token`, редирект на `/`   |
+| `/`              | Главная (нужна cookie `refresh-token`)                        |
+| `/profile`       | RSC `Me` + `myPayments`, аватар, Telegram, покупка PREMIUM    |
+| `/payments/[id]` | Статус заказа: GraphQL `payment(id)`, опрос при `PENDING`     |
+| `/videos`        | Каталог роликов: превью, название, автор                      |
+| `/videos/new`    | Загрузка MP4/WebM: presigned PUT, затем `completeVideoUpload` |
+| `/videos/[id]`   | Плеер с Range-запросами в MinIO и карточкой автора            |
 
 Без cookie запросы кроме `/login`, `/register` и `/auth/callback` уходят на `/login`. С cookie эти страницы редиректят на `/`. Если пользователь отменил согласие у провайдера, gateway вернёт на `/login?error=oauth`.
 

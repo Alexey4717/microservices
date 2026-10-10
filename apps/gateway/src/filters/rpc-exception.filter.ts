@@ -17,6 +17,8 @@ import {
   mapRpcToHttpException,
 } from '@libs/common';
 
+import { describeErrorForLog } from '../helpers/oauth-failure-redirect';
+
 @Catch()
 export class RpcExceptionFilter implements ExceptionFilter, GqlExceptionFilter {
   private readonly logger = new Logger(RpcExceptionFilter.name);
@@ -35,6 +37,12 @@ export class RpcExceptionFilter implements ExceptionFilter, GqlExceptionFilter {
 
     if (type === 'http') {
       const response = host.switchToHttp().getResponse<Response>();
+      if (response.headersSent) {
+        return;
+      }
+      if (isUnexpectedHttpError(exception)) {
+        this.logger.error(describeErrorForLog(exception));
+      }
       const httpException = toHttpException(exception);
       const status = httpException.getStatus();
       const body = httpException.getResponse();
@@ -72,6 +80,14 @@ export class RpcExceptionFilter implements ExceptionFilter, GqlExceptionFilter {
 
     return exception;
   }
+}
+
+function isUnexpectedHttpError(exception: unknown): boolean {
+  return (
+    !(exception instanceof HttpException) &&
+    !(exception instanceof GraphQLError) &&
+    !isRpcLikeError(exception)
+  );
 }
 
 function toHttpException(exception: unknown): HttpException {

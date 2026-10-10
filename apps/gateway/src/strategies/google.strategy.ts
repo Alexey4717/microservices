@@ -21,7 +21,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientID,
       clientSecret,
       callbackURL: `${baseUrl.replace(/\/$/, '')}/auth/google/callback`,
-      scope: ['email', 'profile'],
+      scope: ['openid', 'email', 'profile'],
     });
   }
 

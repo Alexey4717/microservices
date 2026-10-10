@@ -40,6 +40,25 @@ describe('RpcExceptionFilter', () => {
     expect(filter.catch(gqlError, hostOf('graphql'))).toBe(gqlError);
   });
 
+  it('для необработанной http-ошибки пишет сообщение в лог', () => {
+    const errorSpy = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const json = vi.fn();
+    const status = vi.fn().mockReturnValue({ json });
+
+    filter.catch(
+      new Error('Failed to obtain access token'),
+      hostOf('http', { status }),
+    );
+
+    expect(status).toHaveBeenCalledWith(500);
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Error: Failed to obtain access token',
+    );
+    errorSpy.mockRestore();
+  });
+
   it('для http отвечает статусом, не маппит rpc-ветку', () => {
     const json = vi.fn();
     const status = vi.fn().mockReturnValue({ json });

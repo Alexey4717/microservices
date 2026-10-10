@@ -23,6 +23,7 @@ import { AiAssistantResolver } from './resolvers/ai-assistant.resolver';
 import { AuthResolver } from './resolvers/auth.resolver';
 import { PaymentsResolver } from './resolvers/payments.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
+import { VideosResolver } from './resolvers/videos.resolver';
 import { AuthService } from './services/auth.service';
 import { PrismaService } from './services/prisma.service';
 import { TelegramLinkedService } from './services/telegram-linked.service';
@@ -81,6 +82,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthResolver,
     UsersResolver,
     PaymentsResolver,
+    VideosResolver,
     AiAssistantResolver,
     JwtStrategy,
     GoogleStrategy,

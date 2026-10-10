@@ -9,6 +9,7 @@ import { HealthController } from './controllers/health.controller';
 import { FilesService } from './services/files.service';
 import { PrismaService } from './services/prisma.service';
 import { StorageService } from './services/storage.service';
+import { VideosService } from './services/videos.service';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { StorageService } from './services/storage.service';
     PrismaService,
     StorageService,
     FilesService,
+    VideosService,
     {
       provide: APP_INTERCEPTOR,
       useClass: InternalTokenInterceptor,

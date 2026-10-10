@@ -79,6 +79,14 @@ input CreateCheckoutInput {
   provider: PaymentProvider!
 }
 
+input CreateVideoUploadInput {
+  description: String!
+  filename: String!
+  mimeType: String!
+  size: Int!
+  title: String!
+}
+
 input LoginInput {
   email: String!
   password: String!
@@ -89,10 +97,12 @@ input LogoutInput {
 }
 
 type Mutation {
+  completeVideoUpload(id: ID!): Video!
   confirmAiAction(actionId: ID!): AiActionResultModel!
   createAiConversation: AiConversationModel!
   createCheckout(input: CreateCheckoutInput!): CheckoutPayload!
   createTelegramLink: TelegramLink!
+  createVideoUpload(input: CreateVideoUploadInput!): VideoUpload!
   login(input: LoginInput!): AuthPayload!
   loginWithTelegram(initData: String!): AuthPayload!
   logout(input: LogoutInput): Boolean!
@@ -132,6 +142,8 @@ type Query {
   me: UserModel!
   myPayments: [PaymentModel!]!
   payment(id: ID!): PaymentModel!
+  video(id: ID!): Video
+  videos: [Video!]!
 }
 
 input RefreshInput {
@@ -180,4 +192,26 @@ type UserModel {
   id: String!
   name: String
   telegram: TelegramProfile
+}
+
+type Video {
+  author: VideoAuthor!
+  createdAt: String!
+  description: String!
+  id: String!
+  mimeType: String!
+  size: Int!
+  title: String!
+  url: String!
+}
+
+type VideoAuthor {
+  avatarUrl: String
+  id: String!
+  name: String
+}
+
+type VideoUpload {
+  uploadUrl: String!
+  videoId: String!
 }

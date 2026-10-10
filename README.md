@@ -1,6 +1,6 @@
 # Микросервисный монорепозиторий NestJS
 
-Публичный API — GraphQL на `gateway`. Сервис `users` доступен только по gRPC (localhost) и публикует события в RabbitMQ. Сервис `files` хранит аватары в MinIO и метаданные в PostgreSQL. Сервис `payments` создаёт checkout Stripe/PayPal и принимает webhook-и провайдеров. Сервис `ai-assistant` ведёт диалоги с моделью (gRPC server stream, в браузере — graphql-sse). Сервис `telegram` принимает webhook Telegram и привязывает бота к существующему аккаунту через gRPC `users`. Сервис `mailer` слушает `user.created` и отправляет письма (без gRPC и без БД). Gateway хранит только read-model публичного профиля (не source of truth).
+Публичный API — GraphQL на `gateway`. Сервис `users` доступен только по gRPC (localhost) и публикует события в RabbitMQ. Сервис `files` хранит аватары и видео в MinIO и метаданные в PostgreSQL. Сервис `payments` создаёт checkout Stripe/PayPal и принимает webhook-и провайдеров. Сервис `ai-assistant` ведёт диалоги с моделью (gRPC server stream, в браузере — graphql-sse). Сервис `telegram` принимает webhook Telegram и привязывает бота к существующему аккаунту через gRPC `users`. Сервис `mailer` слушает `user.created` и отправляет письма (без gRPC и без БД). Gateway хранит только read-model публичного профиля (не source of truth).
 
 ## Стек
 
@@ -8,7 +8,7 @@
 - GraphQL (Apollo, code-first) на gateway; подписки — graphql-sse (SSE), не WebSocket
 - gRPC (`libs/proto/src/auth.proto`, `libs/proto/src/files.proto`, `libs/proto/src/payments.proto`, `libs/proto/src/ai-assistant.proto`) — `users`, `files`, `payments` и `ai-assistant`
 - Prisma + PostgreSQL: логические БД `users` (источник истины), `files` (метаданные загрузок), `payments` (платежи), `ai_assistant` (диалоги) и `gateway` (проекция профиля)
-- MinIO (S3) — бакет `avatars`, локально порты 9000/9001
+- MinIO (S3) — бакеты `avatars` и `videos`, локально порты 9000/9001
 - RabbitMQ: topic-exchange `users.events` (`user.created`, `user.updated`, `user.authenticated`, `user.telegram.updated`) и `payments.events` (`payment.completed`, `payment.failed`, `payment.canceled`)
 - nodemailer (`mailer`) — welcome-письмо при регистрации
 
@@ -110,7 +110,7 @@ pnpm run ngrok:dev -- 4001
 | Payments gRPC      | `127.0.0.1:50053`               | Только localhost, не публиковать                                                            |
 | AI assistant gRPC  | `127.0.0.1:50054`               | Только localhost, не публиковать                                                            |
 | PostgreSQL         | `localhost:5433`                | БД `users`, `gateway`, `files`, `payments` и `ai_assistant` (порт хоста 5433, чтобы не пересечься с локальным Postgres) |
-| MinIO API          | `http://localhost:9000`         | S3-совместимое хранилище, бакет `avatars`                                                   |
+| MinIO API          | `http://localhost:9000`         | S3-совместимое хранилище, бакеты `avatars` и `videos`                                       |
 | MinIO Console      | `http://localhost:9001`         | UI MinIO (`minioadmin` / `minioadmin` локально)                                             |
 | RabbitMQ           | `localhost:5672`                | AMQP                                                                                        |
 | RabbitMQ UI        | `http://localhost:15672`        | guest/guest                                                                                 |
@@ -215,6 +215,8 @@ curl http://localhost:3000/graphql \
 ```
 
 Лимит 2MB, MIME: `image/jpeg`, `image/png`, `image/webp`, `image/gif`. Gateway вызывает `files.UploadFile`, затем `users.UpdateMe({ avatarUrl })`.
+
+Ролики — отдельные мутации `createVideoUpload` и `completeVideoUpload` (нужен Bearer). Браузер кладёт mp4/webm до 100 МБ в бакет `videos` по presigned PUT, gateway файл не проксирует. Каталог `videos` и карточка `video(id)` отдают публичный URL; плеер дочитывает его запросами `Range` (`206` от MinIO).
 
 Для `me` нужен заголовок `Authorization: Bearer <accessToken>`. Без токена — 401.
 

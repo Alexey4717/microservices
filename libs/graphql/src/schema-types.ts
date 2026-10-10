@@ -112,6 +112,14 @@ export type CreateCheckoutInput = {
   provider: PaymentProvider;
 };
 
+export type CreateVideoUploadInput = {
+  description: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  mimeType: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
+  title: Scalars['String']['input'];
+};
+
 export type LoginInput = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
@@ -123,10 +131,12 @@ export type LogoutInput = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  completeVideoUpload: Video;
   confirmAiAction: AiActionResultModel;
   createAiConversation: AiConversationModel;
   createCheckout: CheckoutPayload;
   createTelegramLink: TelegramLink;
+  createVideoUpload: VideoUpload;
   login: AuthPayload;
   loginWithTelegram: AuthPayload;
   logout: Scalars['Boolean']['output'];
@@ -137,12 +147,20 @@ export type Mutation = {
   uploadAvatar: UserModel;
 };
 
+export type MutationCompleteVideoUploadArgs = {
+  id: Scalars['ID']['input'];
+};
+
 export type MutationConfirmAiActionArgs = {
   actionId: Scalars['ID']['input'];
 };
 
 export type MutationCreateCheckoutArgs = {
   input: CreateCheckoutInput;
+};
+
+export type MutationCreateVideoUploadArgs = {
+  input: CreateVideoUploadInput;
 };
 
 export type MutationLoginArgs = {
@@ -200,6 +218,8 @@ export type Query = {
   me: UserModel;
   myPayments: Array<PaymentModel>;
   payment: PaymentModel;
+  video: Maybe<Video>;
+  videos: Array<Video>;
 };
 
 export type QueryAiConversationArgs = {
@@ -207,6 +227,10 @@ export type QueryAiConversationArgs = {
 };
 
 export type QueryPaymentArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type QueryVideoArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -265,4 +289,29 @@ export type UserModel = {
   id: Scalars['String']['output'];
   name: Maybe<Scalars['String']['output']>;
   telegram: Maybe<TelegramProfile>;
+};
+
+export type Video = {
+  __typename?: 'Video';
+  author: VideoAuthor;
+  createdAt: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  mimeType: Scalars['String']['output'];
+  size: Scalars['Int']['output'];
+  title: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
+export type VideoAuthor = {
+  __typename?: 'VideoAuthor';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  name: Maybe<Scalars['String']['output']>;
+};
+
+export type VideoUpload = {
+  __typename?: 'VideoUpload';
+  uploadUrl: Scalars['String']['output'];
+  videoId: Scalars['String']['output'];
 };

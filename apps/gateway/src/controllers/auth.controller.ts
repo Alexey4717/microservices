@@ -1,17 +1,22 @@
-import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Logger, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type { Request, Response } from 'express';
 
 import { GithubAuthGuard } from '../guards/github-auth.guard';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
-import { oauthSuccessRedirectFor } from '../helpers/oauth-failure-redirect';
+import {
+  oauthSuccessRedirectFor,
+  parseOauthRedirectUrl,
+} from '../helpers/oauth-failure-redirect';
 import { AuthService } from '../services/auth.service';
 import type { OauthProfile } from '../types/auth.types';
 import { renderOauthSuccessHtml } from './oauth-success.html';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
@@ -48,13 +53,22 @@ export class AuthController {
     req: Request,
     res: Response,
   ): Promise<void> {
+    if (res.headersSent || !profile?.email || !profile.providerAccountId) {
+      return;
+    }
+
     const tokens = await this.authService.oauthUpsert(profile);
     const redirectBase = oauthSuccessRedirectFor(req, this.configService);
+    const redirectUrl = parseOauthRedirectUrl(redirectBase);
+    if (redirectBase && !redirectUrl) {
+      this.logger.error(
+        'OAUTH_SUCCESS_REDIRECT_URL is not an absolute URL, tokens are returned in HTML',
+      );
+    }
 
-    if (redirectBase) {
-      const url = new URL(redirectBase);
-      url.hash = `accessToken=${encodeURIComponent(tokens.accessToken)}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`;
-      res.redirect(url.toString());
+    if (redirectUrl) {
+      redirectUrl.hash = `accessToken=${encodeURIComponent(tokens.accessToken)}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`;
+      res.redirect(redirectUrl.toString());
       return;
     }
 

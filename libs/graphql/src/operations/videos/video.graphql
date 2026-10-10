@@ -1,0 +1,13 @@
+query Video($id: ID!) {
+  video(id: $id) {
+    id
+    title
+    description
+    url
+    author {
+      id
+      name
+      avatarUrl
+    }
+  }
+}

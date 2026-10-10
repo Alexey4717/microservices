@@ -76,6 +76,60 @@ export function oauthSuccessRedirectFor(
   return configService.get<string>('OAUTH_SUCCESS_REDIRECT_URL');
 }
 
+export function parseOauthRedirectUrl(
+  value: string | undefined,
+): URL | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  try {
+    return new URL(trimmed);
+  } catch {
+    return undefined;
+  }
+}
+
+export function describeErrorForLog(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return 'Unexpected error';
+  }
+
+  const detail = oauthProviderDetail(error);
+  return detail
+    ? `${error.name}: ${error.message} (${detail})`
+    : `${error.name}: ${error.message}`;
+}
+
+function oauthProviderDetail(error: Error): string | undefined {
+  const oauthError = (error as { oauthError?: unknown }).oauthError;
+  if (typeof oauthError !== 'object' || oauthError === null) {
+    return undefined;
+  }
+
+  const data = (oauthError as { data?: unknown }).data;
+  if (typeof data !== 'string') {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(data) as {
+      error?: unknown;
+      error_description?: unknown;
+    };
+    const code = typeof parsed.error === 'string' ? parsed.error : '';
+    const description =
+      typeof parsed.error_description === 'string'
+        ? parsed.error_description
+        : '';
+    const summary = [code, description].filter(Boolean).join(': ');
+    return summary || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function queryString(value: unknown): string | undefined {
   if (typeof value === 'string') {
     return value;

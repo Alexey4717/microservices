@@ -78,7 +78,10 @@ services:
         mc mb -p local/avatars || true
         mc anonymous set download local/avatars
         mc cors set local/avatars /cors.xml || true
-        echo "MinIO bucket avatars is ready"
+        mc mb -p local/videos || true
+        mc anonymous set download local/videos
+        mc cors set local/videos /cors.xml || true
+        echo "MinIO buckets avatars and videos are ready"
 
 volumes:
   postgres_data:

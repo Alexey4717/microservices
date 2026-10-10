@@ -10,13 +10,39 @@ import {
   mapRpcToGraphqlError,
 } from '@libs/common';
 import { FILES_SERVICE_NAME } from '@libs/proto';
-import type { UploadFileRequest, UploadFileResponse } from '@libs/proto';
+import type {
+  CompleteVideoUploadRequest,
+  CreateVideoUploadRequest,
+  CreateVideoUploadResponse,
+  GetVideoRequest,
+  ListVideosRequest,
+  ListVideosResponse,
+  UploadFileRequest,
+  UploadFileResponse,
+  VideoResponse,
+} from '@libs/proto';
 
 interface FilesGrpcClient {
   uploadFile(
     data: UploadFileRequest,
     metadata: Metadata,
   ): Observable<UploadFileResponse>;
+  createVideoUpload(
+    data: CreateVideoUploadRequest,
+    metadata: Metadata,
+  ): Observable<CreateVideoUploadResponse>;
+  completeVideoUpload(
+    data: CompleteVideoUploadRequest,
+    metadata: Metadata,
+  ): Observable<VideoResponse>;
+  listVideos(
+    data: ListVideosRequest,
+    metadata: Metadata,
+  ): Observable<ListVideosResponse>;
+  getVideo(
+    data: GetVideoRequest,
+    metadata: Metadata,
+  ): Observable<VideoResponse>;
 }
 
 @Injectable()
@@ -37,6 +63,54 @@ export class FilesGrpcService implements OnModuleInit {
     return this.callGraphql(() =>
       this.files.uploadFile(
         data,
+        createInternalMetadata(internalToken, userId),
+      ),
+    );
+  }
+
+  createVideoUpload(
+    data: CreateVideoUploadRequest,
+    internalToken: string,
+    userId: string,
+  ): Promise<CreateVideoUploadResponse> {
+    return this.callGraphql(() =>
+      this.files.createVideoUpload(
+        data,
+        createInternalMetadata(internalToken, userId),
+      ),
+    );
+  }
+
+  completeVideoUpload(
+    id: string,
+    internalToken: string,
+    userId: string,
+  ): Promise<VideoResponse> {
+    return this.callGraphql(() =>
+      this.files.completeVideoUpload(
+        { id },
+        createInternalMetadata(internalToken, userId),
+      ),
+    );
+  }
+
+  listVideos(
+    internalToken: string,
+    userId: string,
+  ): Promise<ListVideosResponse> {
+    return this.callGraphql(() =>
+      this.files.listVideos({}, createInternalMetadata(internalToken, userId)),
+    );
+  }
+
+  getVideo(
+    id: string,
+    internalToken: string,
+    userId: string,
+  ): Promise<VideoResponse> {
+    return this.callGraphql(() =>
+      this.files.getVideo(
+        { id },
         createInternalMetadata(internalToken, userId),
       ),
     );

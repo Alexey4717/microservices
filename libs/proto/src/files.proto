@@ -4,6 +4,10 @@ package files;
 
 service FilesService {
   rpc UploadFile (UploadFileRequest) returns (UploadFileResponse);
+  rpc CreateVideoUpload (CreateVideoUploadRequest) returns (CreateVideoUploadResponse);
+  rpc CompleteVideoUpload (CompleteVideoUploadRequest) returns (VideoResponse);
+  rpc ListVideos (ListVideosRequest) returns (ListVideosResponse);
+  rpc GetVideo (GetVideoRequest) returns (VideoResponse);
 }
 
 message UploadFileRequest {
@@ -18,4 +22,42 @@ message UploadFileResponse {
   string object_key = 3;
   string mime_type = 4;
   int64 size = 5;
+}
+
+message CreateVideoUploadRequest {
+  string title = 1;
+  string description = 2;
+  string filename = 3;
+  string mime_type = 4;
+  int64 size = 5;
+}
+
+message CreateVideoUploadResponse {
+  string video_id = 1;
+  string upload_url = 2;
+}
+
+message CompleteVideoUploadRequest {
+  string id = 1;
+}
+
+message GetVideoRequest {
+  string id = 1;
+}
+
+message ListVideosRequest {}
+
+message VideoResponse {
+  string id = 1;
+  string owner_user_id = 2;
+  string title = 3;
+  string description = 4;
+  string url = 5;
+  string mime_type = 6;
+  int64 size = 7;
+  string created_at = 8;
+}
+
+message ListVideosResponse {
+  repeated VideoResponse videos = 1;
 }

@@ -275,6 +275,9 @@ export class FilesEnvironmentVariables {
   S3_BUCKET!: string;
 
   @IsString()
+  S3_VIDEOS_BUCKET!: string;
+
+  @IsString()
   S3_ACCESS_KEY!: string;
 
   @IsString()

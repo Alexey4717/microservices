@@ -14,6 +14,7 @@ const validFilesEnv = {
   S3_PUBLIC_BASE_URL: 'http://127.0.0.1:9000/files',
   S3_REGION: 'us-east-1',
   S3_BUCKET: 'files',
+  S3_VIDEOS_BUCKET: 'videos',
   S3_ACCESS_KEY: 'access',
   S3_SECRET_KEY: 'secret',
   INTERNAL_SERVICE_TOKEN: 'token',
