@@ -62,6 +62,32 @@ export const LIST_MY_PAYMENTS_TOOL: ToolDefinition = {
   parameters: EMPTY_TOOL_PARAMETERS,
 };
 
+const getVideoParameters = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      description:
+        'UUID видео. Если не указан, сервер берёт id из текущего pagePath /videos/:id.',
+    },
+  },
+  additionalProperties: false,
+};
+
+export const GET_VIDEO_TOOL: ToolDefinition = {
+  name: 'get_video',
+  description:
+    'Live-метаданные одного READY-видео из каталога (title, description, url, ownerUserId). Если id не передан и пользователь на /videos/:id, берётся id со страницы.',
+  parameters: getVideoParameters,
+};
+
+export const LIST_VIDEOS_TOOL: ToolDefinition = {
+  name: 'list_videos',
+  description:
+    'Список последних READY-видео каталога (не больше 20). Без bucket/objectKey. Аргументы не принимаются.',
+  parameters: EMPTY_TOOL_PARAMETERS,
+};
+
 export const PROPOSE_CHECKOUT_TOOL: ToolDefinition = {
   name: 'propose_checkout',
   description:
@@ -86,6 +112,8 @@ export const PROPOSE_UPDATE_NAME_TOOL: ToolDefinition = {
 export const ASSISTANT_TOOL_DEFINITIONS: ToolDefinition[] = [
   GET_MY_PROFILE_TOOL,
   LIST_MY_PAYMENTS_TOOL,
+  GET_VIDEO_TOOL,
+  LIST_VIDEOS_TOOL,
   PROPOSE_CHECKOUT_TOOL,
   PROPOSE_NAVIGATION_TOOL,
   PROPOSE_UPDATE_NAME_TOOL,

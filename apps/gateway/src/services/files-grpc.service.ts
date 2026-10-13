@@ -96,7 +96,7 @@ export class FilesGrpcService implements OnModuleInit {
 
   listVideos(
     internalToken: string,
-    userId: string,
+    userId?: string,
   ): Promise<ListVideosResponse> {
     return this.callGraphql(() =>
       this.files.listVideos({}, createInternalMetadata(internalToken, userId)),
@@ -106,7 +106,7 @@ export class FilesGrpcService implements OnModuleInit {
   getVideo(
     id: string,
     internalToken: string,
-    userId: string,
+    userId?: string,
   ): Promise<VideoResponse> {
     return this.callGraphql(() =>
       this.files.getVideo(

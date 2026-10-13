@@ -62,27 +62,17 @@ export class VideosResolver {
   }
 
   @Query(() => [Video])
-  @UseGuards(GqlAuthGuard)
-  async videos(@CurrentUser() user: AuthenticatedUser): Promise<Video[]> {
-    const result = await this.filesGrpc.listVideos(
-      this.internalToken(),
-      user.userId,
-    );
+  async videos(): Promise<Video[]> {
+    const result = await this.filesGrpc.listVideos(this.internalToken());
     return this.toVideos(result.videos ?? []);
   }
 
   @Query(() => Video, { nullable: true })
-  @UseGuards(GqlAuthGuard)
   async video(
     @Args('id', { type: () => ID }) id: string,
-    @CurrentUser() user: AuthenticatedUser,
   ): Promise<Video | null> {
     try {
-      const result = await this.filesGrpc.getVideo(
-        id,
-        this.internalToken(),
-        user.userId,
-      );
+      const result = await this.filesGrpc.getVideo(id, this.internalToken());
       return await this.toVideo(result);
     } catch (error) {
       if (isVideoNotFound(error)) {

@@ -2,6 +2,7 @@ export interface ToolSession {
   userId: string;
   internalToken: string;
   conversationId?: string;
+  pagePath?: string | null;
 }
 
 export interface ActionProposal {

@@ -56,11 +56,23 @@ async function AiAssistantWidgetGate() {
 
 async function UserSessionMenu() {
   const session = await getSession();
-  const displayName = session ? sessionDisplayName(session.user) : null;
+  if (!session) {
+    return (
+      <Link
+        href="/login"
+        prefetch={false}
+        className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+      >
+        Войти
+      </Link>
+    );
+  }
+
+  const displayName = sessionDisplayName(session.user);
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      {displayName && session ? <HeaderUser user={session.user} /> : null}
+      {displayName ? <HeaderUser user={session.user} /> : null}
       <LogoutButton />
     </div>
   );

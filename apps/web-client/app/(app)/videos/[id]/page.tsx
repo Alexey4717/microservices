@@ -1,12 +1,9 @@
-import { headers } from 'next/headers';
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
 import { VideoDocument } from '@libs/graphql/operations/videos/video.generated';
 
 import { query } from '@/lib/apollo/server';
-import { isPrefetchRequest } from '@/lib/auth/request-kind';
-import { getSession } from '@/lib/auth/session';
 
 import { VideoPlayer } from './video-player';
 
@@ -14,26 +11,38 @@ type VideoPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function VideoPage({ params }: VideoPageProps) {
-  const session = await getSession();
-  if (!session) {
-    if (isPrefetchRequest(await headers())) {
-      return null;
-    }
-    redirect('/login');
+export async function generateMetadata({
+  params,
+}: VideoPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const video = await loadVideo(id);
+  if (!video) {
+    return { title: 'Видео' };
   }
 
+  const description = video.description?.trim();
+  return {
+    title: video.title,
+    ...(description ? { description } : {}),
+  };
+}
+
+export default async function VideoPage({ params }: VideoPageProps) {
   const { id } = await params;
-  const result = await query({
-    query: VideoDocument,
-    variables: { id },
-  }).catch(() => null);
-  const video = result?.data?.video;
+  const video = await loadVideo(id);
   if (!video) {
     return <VideoNotFound />;
   }
 
   return <VideoPlayer video={video} />;
+}
+
+async function loadVideo(id: string) {
+  const result = await query({
+    query: VideoDocument,
+    variables: { id },
+  }).catch(() => null);
+  return result?.data?.video ?? null;
 }
 
 function VideoNotFound() {

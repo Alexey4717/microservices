@@ -39,6 +39,7 @@ function createService() {
     { retrieve: vi.fn().mockResolvedValue([]) },
     { fit: vi.fn() } as never,
     { get: vi.fn(), getOrThrow: vi.fn() } as never,
+    { getVideo: vi.fn(), listVideos: vi.fn() } as never,
   );
   return { service, findFirst, messageCreate, createTurn };
 }

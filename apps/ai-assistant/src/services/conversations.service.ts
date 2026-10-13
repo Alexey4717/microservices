@@ -33,6 +33,12 @@ import {
   selectUncoveredMessages,
   takeSummaryPrefix,
 } from './conversation-summary';
+import { FilesGrpcService } from './files-grpc.service';
+import {
+  type FocusedVideoSnapshot,
+  formatFocusedVideoPrompt,
+  parseFocusedEntity,
+} from './focused-entity';
 import { LlmService } from './llm.service';
 import { PrismaService } from './prisma.service';
 import { normalizeAppPagePath, readActionTitle } from './propose-actions';
@@ -55,6 +61,7 @@ import {
   toBudgetMessages,
   toLlmMessages,
 } from './transcript';
+import { toVideoToolSnapshot } from './video-tool';
 
 const MAX_TOOL_ROUNDS = 4;
 
@@ -74,6 +81,7 @@ export class ConversationsService {
     private readonly retrieval: RetrievalPort,
     private readonly budget: TokenBudgetService,
     private readonly config: ConfigService,
+    private readonly files: FilesGrpcService,
   ) {}
 
   async createConversation(
@@ -153,7 +161,8 @@ export class ConversationsService {
       parseTemperatureInput(data.temperature),
       this.readTemperature(),
     );
-    const session = this.toolSession(userId, conversation.id);
+    const session = this.toolSession(userId, conversation.id, pagePath);
+    const focusedEntity = await this.prefetchFocusedEntity(pagePath);
     const fragments = await this.retrieval.retrieve({
       userId,
       query: content,
@@ -171,6 +180,7 @@ export class ConversationsService {
       draftRows,
       retrievalText,
       pagePath,
+      focusedEntity,
       userId,
       signal,
     });
@@ -339,6 +349,7 @@ export class ConversationsService {
     draftRows: StoredMessage[];
     retrievalText: string;
     pagePath: string | null;
+    focusedEntity: string | null;
     userId: string;
     signal: AbortSignal;
   }): Promise<{ fitted: FitHistoryResult; systemPrompt: string }> {
@@ -346,6 +357,7 @@ export class ConversationsService {
     let covers = input.conversation.summaryCoversMessageId;
     let systemPrompt = buildSystemPrompt({
       pagePath: input.pagePath,
+      focusedEntity: input.focusedEntity,
       summary,
     });
     let fitted = this.fitHistory(
@@ -407,6 +419,7 @@ export class ConversationsService {
       });
       systemPrompt = buildSystemPrompt({
         pagePath: input.pagePath,
+        focusedEntity: input.focusedEntity,
         summary,
       });
       fitted = this.fitHistory(
@@ -418,6 +431,31 @@ export class ConversationsService {
     }
 
     return { fitted, systemPrompt };
+  }
+
+  private async prefetchFocusedEntity(
+    pagePath: string | null,
+  ): Promise<string | null> {
+    const focused = parseFocusedEntity(pagePath);
+    if (!focused || focused.type !== 'video') {
+      return null;
+    }
+
+    const internalToken = this.config.getOrThrow<string>(
+      'INTERNAL_SERVICE_TOKEN',
+    );
+    try {
+      const video = await this.files.getVideo(focused.id, internalToken);
+      const snapshot: FocusedVideoSnapshot = toVideoToolSnapshot(video);
+      return formatFocusedVideoPrompt(snapshot);
+    } catch (error) {
+      this.logger.warn(
+        `Prefetch видео ${focused.id} не удался: ${
+          error instanceof Error ? error.message : 'unknown'
+        }`,
+      );
+      return formatFocusedVideoPrompt(null);
+    }
   }
 
   private fitHistory(
@@ -507,10 +545,15 @@ export class ConversationsService {
     return conversation;
   }
 
-  private toolSession(userId: string, conversationId: string): ToolSession {
+  private toolSession(
+    userId: string,
+    conversationId: string,
+    pagePath: string | null,
+  ): ToolSession {
     return {
       userId,
       conversationId,
+      pagePath,
       internalToken: this.config.getOrThrow<string>('INTERNAL_SERVICE_TOKEN'),
     };
   }

@@ -69,6 +69,7 @@ const validAiAssistantEnv = {
   AI_ASSISTANT_DAILY_TOKEN_LIMIT: '0',
   USERS_GRPC_URL: '127.0.0.1:50051',
   PAYMENTS_GRPC_URL: '127.0.0.1:50053',
+  FILES_GRPC_URL: '127.0.0.1:50052',
   INTERNAL_SERVICE_TOKEN: 'token',
 };
 
@@ -88,5 +89,13 @@ describe('validateAiAssistantEnv', () => {
     const { LLM_MODEL: _ignored, ...withoutModel } = validAiAssistantEnv;
 
     expect(() => validateAiAssistantEnv(withoutModel)).toThrow(/LLM_MODEL/);
+  });
+
+  it('требует FILES_GRPC_URL', () => {
+    const { FILES_GRPC_URL: _ignored, ...withoutFiles } = validAiAssistantEnv;
+
+    expect(() => validateAiAssistantEnv(withoutFiles)).toThrow(
+      /FILES_GRPC_URL/,
+    );
   });
 });

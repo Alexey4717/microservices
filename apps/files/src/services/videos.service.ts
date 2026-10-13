@@ -146,8 +146,7 @@ export class VideosService {
     return toVideoResponse(updated);
   }
 
-  async listVideos(metadata: Metadata): Promise<ListVideosResponse> {
-    requireUserId(metadata);
+  async listVideos(_metadata: Metadata): Promise<ListVideosResponse> {
     const videos = await this.prisma.video.findMany({
       where: { status: 'READY' },
       orderBy: { createdAt: 'desc' },
@@ -158,9 +157,8 @@ export class VideosService {
 
   async getVideo(
     data: GetVideoRequest,
-    metadata: Metadata,
+    _metadata: Metadata,
   ): Promise<VideoResponse> {
-    requireUserId(metadata);
     const id = data.id?.trim() ?? '';
     const video = id
       ? await this.prisma.video.findUnique({ where: { id } })

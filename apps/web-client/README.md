@@ -24,7 +24,7 @@ Refresh-токен живёт в httpOnly-cookie `refresh-token`. Её **выс�
 
 ## Видео
 
-На `/videos` каталог карточек: первый кадр даёт `<video muted preload="metadata">` с публичного URL, под ним название и автор. Пустой список и ссылка «Загрузить видео» ведут на `/videos/new`.
+На `/videos` каталог карточек доступен без входа: первый кадр даёт `<video muted preload="metadata">` с публичного URL, под ним название и автор. Ссылка «Загрузить видео» для анонима ведёт на `/login`, для сессии — на `/videos/new`. Карточка `/videos/[id]` тоже публичная; у неё есть `generateMetadata` из GraphQL `video`.
 
 Форма проверяет MIME (`video/mp4`, `video/webm`) и размер (до 100 МБ) до запроса. Дальше `createVideoUpload`, `PUT` файла на presigned URL с тем же `Content-Type`, затем `completeVideoUpload` и переход на `/videos/[id]`.
 
@@ -32,19 +32,19 @@ Refresh-токен живёт в httpOnly-cookie `refresh-token`. Её **выс�
 
 ## Маршруты
 
-| Путь             | Назначение                                                    |
-| ---------------- | ------------------------------------------------------------- |
-| `/login`         | Вход по email и паролю или через Google / GitHub              |
-| `/register`      | Регистрация (имя необязательно) или OAuth                     |
-| `/auth/callback` | Финиш OAuth: hash → cookie `refresh-token`, редирект на `/`   |
-| `/`              | Главная (нужна cookie `refresh-token`)                        |
-| `/profile`       | RSC `Me` + `myPayments`, аватар, Telegram, покупка PREMIUM    |
-| `/payments/[id]` | Статус заказа: GraphQL `payment(id)`, опрос при `PENDING`     |
-| `/videos`        | Каталог роликов: превью, название, автор                      |
-| `/videos/new`    | Загрузка MP4/WebM: presigned PUT, затем `completeVideoUpload` |
-| `/videos/[id]`   | Плеер с Range-запросами в MinIO и карточкой автора            |
+| Путь             | Назначение                                                  |
+| ---------------- | ----------------------------------------------------------- |
+| `/login`         | Вход по email и паролю или через Google / GitHub            |
+| `/register`      | Регистрация (имя необязательно) или OAuth                   |
+| `/auth/callback` | Финиш OAuth: hash → cookie `refresh-token`, редирект на `/` |
+| `/`              | Главная (нужна cookie `refresh-token`)                      |
+| `/profile`       | RSC `Me` + `myPayments`, аватар, Telegram, покупка PREMIUM  |
+| `/payments/[id]` | Статус заказа: GraphQL `payment(id)`, опрос при `PENDING`   |
+| `/videos`        | Публичный каталог: превью, название, автор                  |
+| `/videos/new`    | Загрузка MP4/WebM (нужна сессия): presigned PUT + complete  |
+| `/videos/[id]`   | Публичный плеер с Range в MinIO, SEO metadata, автор        |
 
-Без cookie запросы кроме `/login`, `/register` и `/auth/callback` уходят на `/login`. С cookie эти страницы редиректят на `/`. Если пользователь отменил согласие у провайдера, gateway вернёт на `/login?error=oauth`.
+Без cookie запросы кроме `/login`, `/register`, `/auth/callback`, `/videos` и `/videos/<uuid>` уходят на `/login`. С cookie страницы auth редиректят на `/`. Если пользователь отменил согласие у провайдера, gateway вернёт на `/login?error=oauth`.
 
 Callback URL в консоли Google / GitHub — `http://localhost:3000/auth/google/callback` и `http://localhost:3000/auth/github/callback` (gateway). Фронтовый `/auth/callback` задаётся в `OAUTH_SUCCESS_REDIRECT_URL`.
 

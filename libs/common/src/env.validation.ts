@@ -517,6 +517,9 @@ export class AiAssistantEnvironmentVariables {
   PAYMENTS_GRPC_URL!: string;
 
   @IsString()
+  FILES_GRPC_URL!: string;
+
+  @IsString()
   INTERNAL_SERVICE_TOKEN!: string;
 }
 

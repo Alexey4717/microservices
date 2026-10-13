@@ -7,6 +7,7 @@ import {
   REFRESH_COOKIE_NAME,
   SESSION_USER_HEADER,
 } from '@/lib/auth/constants';
+import { isPublicAppPath } from '@/lib/auth/public-paths';
 import {
   isPrefetchRequest,
   isServerActionRequest,
@@ -20,8 +21,9 @@ export async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;
   const { pathname } = request.nextUrl;
   const isAuthPath = AUTH_PATHS.has(pathname);
+  const isPublicPath = isPublicAppPath(pathname);
 
-  if (!refreshToken && !isAuthPath) {
+  if (!refreshToken && !isAuthPath && !isPublicPath) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 

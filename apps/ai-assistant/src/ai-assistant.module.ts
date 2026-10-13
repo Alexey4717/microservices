@@ -22,6 +22,7 @@ import { RetrievalPort } from './services/retrieval.port';
 import { TokenBudgetService } from './services/token-budget.service';
 import { ToolRegistry } from './services/tool-registry';
 import { VectorRetrieval } from './services/vector-retrieval';
+import { GetVideoTool, ListVideosTool } from './services/video-tool';
 
 @Module({
   imports: [
@@ -39,6 +40,8 @@ import { VectorRetrieval } from './services/vector-retrieval';
     TokenBudgetService,
     ProfileTool,
     PaymentsTool,
+    GetVideoTool,
+    ListVideosTool,
     ProposeCheckoutTool,
     ProposeNavigationTool,
     ProposeUpdateNameTool,

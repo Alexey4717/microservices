@@ -10,6 +10,7 @@ import {
   ProposeUpdateNameTool,
 } from './propose-tools';
 import type { AssistantTool, ToolEffect, ToolSession } from './tool-types';
+import { GetVideoTool, ListVideosTool } from './video-tool';
 
 export function toOpenAiTools(
   tools: ReadonlyArray<
@@ -33,6 +34,8 @@ export class ToolRegistry {
   constructor(
     private readonly profile: ProfileTool,
     private readonly payments: PaymentsTool,
+    private readonly getVideo: GetVideoTool,
+    private readonly listVideos: ListVideosTool,
     private readonly proposeCheckout: ProposeCheckoutTool,
     private readonly proposeNavigation: ProposeNavigationTool,
     private readonly proposeUpdateName: ProposeUpdateNameTool,
@@ -42,6 +45,8 @@ export class ToolRegistry {
     return [
       this.profile,
       this.payments,
+      this.getVideo,
+      this.listVideos,
       this.proposeCheckout,
       this.proposeNavigation,
       this.proposeUpdateName,

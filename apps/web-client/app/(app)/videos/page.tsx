@@ -1,24 +1,14 @@
-import { headers } from 'next/headers';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
 import { VideosDocument } from '@libs/graphql/operations/videos/videos.generated';
 
 import { query } from '@/lib/apollo/server';
-import { isPrefetchRequest } from '@/lib/auth/request-kind';
 import { getSession } from '@/lib/auth/session';
 
 import { VideoGrid } from './video-grid';
 
 export default async function VideosPage() {
   const session = await getSession();
-  if (!session) {
-    if (isPrefetchRequest(await headers())) {
-      return null;
-    }
-    redirect('/login');
-  }
-
   const result = await query({ query: VideosDocument }).catch(() => null);
   const videos = result?.data?.videos;
 
@@ -29,7 +19,7 @@ export default async function VideosPage() {
           Видео
         </h1>
         <Link
-          href="/videos/new"
+          href={session ? '/videos/new' : '/login'}
           prefetch={false}
           className="font-medium text-zinc-900 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-100"
         >

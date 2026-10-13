@@ -36,8 +36,8 @@ docker compose exec postgres psql -U postgres -c "CREATE DATABASE files;"
 
 - `CreateVideoUpload` — `title` 1–120 символов, `description` до 2000 (пустое можно), `filename`, MIME только `video/mp4` или `video/webm`, размер от 1 байта до **100 МБ**. Владелец только из metadata `user-id`. Пишет строку `PENDING`, ключ `{userId}/{videoId}.ext`. Ответ: `videoId` и presigned PUT примерно на 15 минут, подпись включает `Content-Type`.
 - `CompleteVideoUpload` — только владелец. `HeadObject`: размер объекта должен совпасть с заявленным, затем статус `READY` и публичный URL `{S3_PUBLIC_BASE_URL}/videos/{key}`. Повторный вызов для уже `READY` того же владельца возвращает запись. Чужие и не `READY` в каталог не попадают.
-- `ListVideos` — только `READY`, новые сверху, не больше 50.
-- `GetVideo` — один `READY` ролик или not-found.
+- `ListVideos` — публичное чтение: только `READY`, новые сверху, не больше 50. Нужен `x-internal-token`, `user-id` не обязателен.
+- `GetVideo` — публичное чтение: один `READY` ролик или not-found. Нужен `x-internal-token`, `user-id` не обязателен.
 
 Просмотр — прогрессивная отдача одного файла. Плеер берёт публичный URL и сам шлёт `Range`; MinIO отвечает `206 Partial Content`. Gateway байты не проксирует. HLS, DASH и ffmpeg нет: исходный mp4/webm отдаётся как есть.
 
