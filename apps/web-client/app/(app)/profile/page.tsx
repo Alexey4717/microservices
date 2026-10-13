@@ -1,13 +1,9 @@
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-
 import { MyPaymentsDocument } from '@libs/graphql/operations/payments/my-payments.generated';
 import { MeDocument } from '@libs/graphql/operations/user/me.generated';
 
 import { query } from '@/lib/apollo/server';
 import { rememberSessionUser } from '@/lib/auth/actions';
 import { toAccountTier } from '@/lib/auth/auth-user';
-import { isPrefetchRequest } from '@/lib/auth/request-kind';
 import { getSession } from '@/lib/auth/session';
 
 import { AvatarUpload } from './avatar-upload';
@@ -18,10 +14,7 @@ import { TelegramLinkButton } from './telegram-link-button';
 export default async function ProfilePage() {
   const session = await getSession();
   if (!session) {
-    if (isPrefetchRequest(await headers())) {
-      return null;
-    }
-    redirect('/login');
+    return null;
   }
 
   const [meResult, paymentsResult] = await Promise.all([

@@ -1,13 +1,31 @@
+import { headers } from 'next/headers';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { type ReactNode, Suspense } from 'react';
 
 import { logoutAction } from '@/lib/auth/actions';
+import { PATHNAME_HEADER } from '@/lib/auth/constants';
+import { isPublicAppPath } from '@/lib/auth/public-paths';
+import { isPrefetchRequest } from '@/lib/auth/request-kind';
 import { getSession, sessionDisplayName } from '@/lib/auth/session';
 
 import { AiAssistantWidget } from './ai-assistant-widget';
 import { HeaderUser } from './header-user';
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const headerStore = await headers();
+  const pathname = headerStore.get(PATHNAME_HEADER) ?? '';
+
+  if (!isPublicAppPath(pathname)) {
+    const session = await getSession();
+    if (!session) {
+      if (isPrefetchRequest(headerStore)) {
+        return null;
+      }
+      redirect('/login');
+    }
+  }
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">

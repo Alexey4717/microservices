@@ -5,3 +5,6 @@ export const ACCESS_TOKEN_HEADER = 'x-access-token';
 
 /** Request header with the public user payload from the same refresh. Incoming client values are stripped. */
 export const SESSION_USER_HEADER = 'x-session-user';
+
+/** Request pathname forwarded by `proxy.ts`. Incoming client values are stripped. */
+export const PATHNAME_HEADER = 'x-pathname';

@@ -1,12 +1,8 @@
-import { headers } from 'next/headers';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
 import { GetPaymentDocument } from '@libs/graphql/operations/payments/get-payment.generated';
 
 import { query } from '@/lib/apollo/server';
-import { isPrefetchRequest } from '@/lib/auth/request-kind';
-import { getSession } from '@/lib/auth/session';
 
 import { PaymentOrder } from './payment-order';
 
@@ -15,14 +11,6 @@ type PaymentPageProps = {
 };
 
 export default async function PaymentPage({ params }: PaymentPageProps) {
-  const session = await getSession();
-  if (!session) {
-    if (isPrefetchRequest(await headers())) {
-      return null;
-    }
-    redirect('/login');
-  }
-
   const { id } = await params;
   const result = await query({
     query: GetPaymentDocument,

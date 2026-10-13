@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 import { applySetCookiesToNextResponse } from '@/lib/auth/apply-parsed-cookie';
 import {
   ACCESS_TOKEN_HEADER,
+  PATHNAME_HEADER,
   REFRESH_COOKIE_NAME,
   SESSION_USER_HEADER,
 } from '@/lib/auth/constants';
@@ -32,6 +33,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const requestHeaders = stripClientAuthHeaders(request.headers);
+  requestHeaders.set(PATHNAME_HEADER, pathname);
 
   const skipRefresh =
     !refreshToken ||
@@ -76,6 +78,7 @@ function stripClientAuthHeaders(incoming: Headers): Headers {
   const requestHeaders = new Headers(incoming);
   requestHeaders.delete(ACCESS_TOKEN_HEADER);
   requestHeaders.delete(SESSION_USER_HEADER);
+  requestHeaders.delete(PATHNAME_HEADER);
 
   const strippedCookie = withoutRequestCookie(
     withoutRequestCookie(
