@@ -37,13 +37,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <Link className="hover:underline" href="/videos" prefetch={false}>
               Видео
             </Link>
-            <Link
-              className="hover:underline"
-              href="/ai-assistant"
-              prefetch={false}
-            >
-              ИИ-ассистент
-            </Link>
             <Link className="hover:underline" href="/profile" prefetch={false}>
               Профиль
             </Link>

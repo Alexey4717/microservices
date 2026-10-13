@@ -72,6 +72,20 @@ export class AiAssistantResolver {
     return toAiConversationModel(result);
   }
 
+  @Mutation(() => AiConversationModel)
+  @UseGuards(GqlAuthGuard)
+  async deleteAiConversation(
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<AiConversationModel> {
+    const result = await this.aiAssistantGrpc.deleteConversation(
+      id,
+      this.internalToken(),
+      user.userId,
+    );
+    return toAiConversationModel(result);
+  }
+
   @Mutation(() => AiActionResultModel)
   @UseGuards(GqlAuthGuard)
   async confirmAiAction(

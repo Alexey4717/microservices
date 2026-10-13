@@ -1,5 +1,9 @@
 export type CreateConversationRequest = Record<string, never>;
 
+export interface DeleteConversationRequest {
+  id: string;
+}
+
 export type ListConversationsRequest = Record<string, never>;
 
 export interface GetConversationRequest {

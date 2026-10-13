@@ -1,6 +1,6 @@
 # AI Assistant
 
-Приватный сервис чата с моделью. Публичный GraphQL — только на gateway: `aiConversations`, `aiConversation`, `createAiConversation`, `confirmAiAction`, `rejectAiAction`, подписка `aiAssistantReply`. Между gateway и сервисом — gRPC, ответ модели идёт server stream. Браузер получает токены через graphql-sse, не через WebSocket.
+Приватный сервис чата с моделью. Публичный GraphQL — только на gateway: `aiConversations`, `aiConversation`, `createAiConversation`, `deleteAiConversation`, `confirmAiAction`, `rejectAiAction`, подписка `aiAssistantReply`. Между gateway и сервисом — gRPC, ответ модели идёт server stream. Браузер получает токены через graphql-sse, не через WebSocket.
 
 HTTP на ai-assistant — только `GET /health`. gRPC слушает `127.0.0.1:50054`. Публичные API на `0.0.0.0` не биндить.
 
@@ -47,11 +47,11 @@ pnpm run start:all
 
 Модель по умолчанию — локальная Ollama: `LLM_BASE_URL=http://127.0.0.1:11434/v1`, `LLM_MODEL=gemma4:12b`.
 
-Проверка: login → страница `/ai-assistant` или кнопка «Ассистент» → новый диалог → сообщение. Ответ дописывается в последнюю реплику ассистента. Над ответом короткая строка вызванных инструментов. Ползунок температуры уходит в подписку вместе с текущим путём страницы.
+Проверка: login → кнопка «Ассистент» → новый диалог (локальный черновик) → сообщение. Диалог создаётся на сервере при первой отправке. Ответ дописывается в последнюю реплику ассистента. Над ответом короткая строка вызванных инструментов. Ползунок температуры уходит в подписку вместе с текущим путём страницы.
 
 ## Методы AiAssistantService (`package ai_assistant`)
 
-- `CreateConversation` / `ListConversations` / `GetConversation` — unary. Чужой `conversationId` не читается и не пишется. В деталях диалога приходят ожидающие кнопки действия.
+- `CreateConversation` / `DeleteConversation` / `ListConversations` / `GetConversation` — unary. Чужой `conversationId` не читается, не пишется и не удаляется. В деталях диалога приходят ожидающие кнопки действия.
 - `SendMessage` — server stream. Кроме `delta` и `done` событие может нести имя инструмента и карточку действия (`id`, тип, заголовок). Поля необязательные: старый клиент их не запрашивает. В запрос можно передать `pagePath` и `temperature`.
 - `ConfirmAction` / `RejectAction` — подтверждение и отказ. Чужое действие не находится. Оплата и смена имени выполняются только здесь, от имени user id сессии.
 

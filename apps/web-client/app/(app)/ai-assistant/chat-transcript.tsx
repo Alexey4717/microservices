@@ -6,7 +6,6 @@ import { ChatActionCard } from './chat-action-card';
 import type { ChatAction, ChatLine } from './chat-model';
 
 type ChatTranscriptProps = {
-  variant: 'page' | 'panel';
   messages: ChatLine[];
   actions: ChatAction[];
   streaming: boolean;
@@ -15,7 +14,6 @@ type ChatTranscriptProps = {
 };
 
 export function ChatTranscript({
-  variant,
   messages,
   actions,
   streaming,
@@ -29,13 +27,7 @@ export function ChatTranscript({
   }, [messages, actions]);
 
   return (
-    <div
-      className={
-        variant === 'panel'
-          ? 'flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3'
-          : 'flex flex-1 flex-col gap-3 overflow-y-auto p-4'
-      }
-    >
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden p-3">
       {messages.length === 0 && actions.length === 0 ? (
         <p className="text-sm text-zinc-500">
           Выберите диалог или напишите первое сообщение.
@@ -44,18 +36,18 @@ export function ChatTranscript({
         messages.map((message) => (
           <article
             key={message.id}
-            className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+            className={`min-w-0 max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
               message.role === 'user'
                 ? 'ml-auto bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
                 : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
             }`}
           >
             {message.role === 'assistant' && message.tools?.length ? (
-              <p className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mb-1 break-words text-xs text-zinc-500 dark:text-zinc-400 [overflow-wrap:anywhere]">
                 Инструменты: {message.tools.join(' → ')}
               </p>
             ) : null}
-            <p className="whitespace-pre-wrap">
+            <p className="break-words whitespace-pre-wrap [overflow-wrap:anywhere]">
               {message.content || (streaming ? '…' : '')}
             </p>
           </article>

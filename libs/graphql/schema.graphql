@@ -103,6 +103,7 @@ type Mutation {
   createCheckout(input: CreateCheckoutInput!): CheckoutPayload!
   createTelegramLink: TelegramLink!
   createVideoUpload(input: CreateVideoUploadInput!): VideoUpload!
+  deleteAiConversation(id: ID!): AiConversationModel!
   login(input: LoginInput!): AuthPayload!
   loginWithTelegram(initData: String!): AuthPayload!
   logout(input: LogoutInput): Boolean!

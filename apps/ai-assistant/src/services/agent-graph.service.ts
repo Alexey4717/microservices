@@ -9,12 +9,12 @@ import { ConfigService } from '@nestjs/config';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 import {
+  type CompiledAgentGraph,
   buildAgentGraph,
   finalAssistantText,
   llmMessagesToLangChain,
   loadLangGraphModules,
   readInterruptAction,
-  type CompiledAgentGraph,
 } from './agent-graph';
 import type {
   AgentState,
@@ -68,9 +68,8 @@ export class AgentGraphService implements OnModuleInit, OnModuleDestroy {
     const databaseUrl = this.config.getOrThrow<string>(
       'AI_ASSISTANT_DATABASE_URL',
     );
-    const { PostgresSaver } = await import(
-      '@langchain/langgraph-checkpoint-postgres'
-    );
+    const { PostgresSaver } =
+      await import('@langchain/langgraph-checkpoint-postgres');
     const checkpointer = PostgresSaver.fromConnString(databaseUrl);
     await checkpointer.setup();
     this.checkpointer = checkpointer;

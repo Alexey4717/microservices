@@ -22,7 +22,7 @@ const navigationParameters = {
   properties: {
     path: {
       type: 'string',
-      enum: ['/', '/profile', '/payments', '/videos', '/ai-assistant'],
+      enum: ['/', '/profile', '/payments', '/videos'],
       description: 'Путь внутри приложения',
     },
   },
@@ -98,7 +98,7 @@ export const PROPOSE_CHECKOUT_TOOL: ToolDefinition = {
 export const PROPOSE_NAVIGATION_TOOL: ToolDefinition = {
   name: 'propose_navigation',
   description:
-    'Предложить переход по приложению. Допустимы только пути /, /profile, /payments, /videos, /ai-assistant. Переход выполняет клиент после кнопки подтверждения.',
+    'Предложить переход по приложению. Допустимы только пути /, /profile, /payments, /videos. Переход выполняет клиент после кнопки подтверждения.',
   parameters: navigationParameters,
 };
 

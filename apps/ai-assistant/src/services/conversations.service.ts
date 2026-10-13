@@ -17,6 +17,7 @@ import type {
   ConversationDetailResponse,
   ConversationResponse,
   CreateConversationRequest,
+  DeleteConversationRequest,
   GetConversationRequest,
   ListConversationsRequest,
   ListConversationsResponse,
@@ -26,6 +27,7 @@ import type {
   SendMessageRequest,
 } from '@libs/proto';
 
+import { AgentGraphService } from './agent-graph.service';
 import {
   SUMMARY_INPUT_TOKENS,
   SUMMARY_INSTRUCTION,
@@ -33,7 +35,6 @@ import {
   selectUncoveredMessages,
   takeSummaryPrefix,
 } from './conversation-summary';
-import { AgentGraphService } from './agent-graph.service';
 import { FilesGrpcService } from './files-grpc.service';
 import {
   type FocusedVideoSnapshot,
@@ -90,6 +91,16 @@ export class ConversationsService {
     const conversation = await this.prisma.conversation.create({
       data: { userId },
     });
+    return toConversationResponse(conversation);
+  }
+
+  async deleteConversation(
+    data: DeleteConversationRequest,
+    metadata: Metadata,
+  ): Promise<ConversationResponse> {
+    const userId = requireUserId(metadata);
+    const conversation = await this.loadOwned(data.id, userId);
+    await this.prisma.conversation.delete({ where: { id: conversation.id } });
     return toConversationResponse(conversation);
   }
 

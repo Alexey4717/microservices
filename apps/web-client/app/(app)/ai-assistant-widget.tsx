@@ -1,21 +1,15 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AiAssistantPanel } from './ai-assistant-panel';
 
 export function AiAssistantWidget() {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [engaged, setEngaged] = useState(false);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const focusClose = useRef(false);
   const restoreLauncherFocus = useRef(false);
-
-  const onAssistantPage = isAssistantRoute(pathname);
-  const showPanel = open && !onAssistantPage;
-  const showButton = !open && !onAssistantPage;
 
   const closePanel = useCallback(() => {
     restoreLauncherFocus.current = true;
@@ -29,23 +23,23 @@ export function AiAssistantWidget() {
   }
 
   useEffect(() => {
-    if (open || !restoreLauncherFocus.current || onAssistantPage) {
+    if (open || !restoreLauncherFocus.current) {
       return;
     }
     restoreLauncherFocus.current = false;
     launcherRef.current?.focus();
-  }, [onAssistantPage, open]);
+  }, [open]);
 
   return (
     <>
       {engaged ? (
         <AiAssistantPanel
-          showPanel={showPanel}
+          showPanel={open}
           focusCloseRef={focusClose}
           onClose={closePanel}
         />
       ) : null}
-      {showButton ? (
+      {!open ? (
         <button
           ref={launcherRef}
           type="button"
@@ -58,8 +52,4 @@ export function AiAssistantWidget() {
       ) : null}
     </>
   );
-}
-
-function isAssistantRoute(pathname: string): boolean {
-  return pathname === '/ai-assistant' || pathname.startsWith('/ai-assistant/');
 }

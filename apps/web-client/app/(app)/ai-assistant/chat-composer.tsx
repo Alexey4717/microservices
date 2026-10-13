@@ -3,14 +3,12 @@
 import { useState } from 'react';
 
 type ChatComposerProps = {
-  variant: 'page' | 'panel';
   streaming: boolean;
   creating: boolean;
   onSend: (content: string, temperature: number) => Promise<boolean>;
 };
 
 export function ChatComposer({
-  variant,
   streaming,
   creating,
   onSend,
@@ -57,13 +55,9 @@ export function ChatComposer({
         />
         <span className="tabular-nums">{temperature.toFixed(1)}</span>
       </label>
-      <div className="flex gap-2">
+      <div className="flex min-w-0 gap-2">
         <textarea
-          className={
-            variant === 'panel'
-              ? 'max-h-24 min-h-10 flex-1 resize-none rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 dark:border-zinc-700 dark:focus-visible:ring-zinc-100'
-              : 'min-h-12 flex-1 resize-y rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 dark:border-zinc-700 dark:focus-visible:ring-zinc-100'
-          }
+          className="max-h-24 min-h-10 min-w-0 flex-1 resize-none rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 dark:border-zinc-700 dark:focus-visible:ring-zinc-100"
           placeholder="Сообщение"
           value={draft}
           rows={2}

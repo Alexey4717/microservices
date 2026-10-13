@@ -8,6 +8,13 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   libsConsumersConfig,
+  {
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

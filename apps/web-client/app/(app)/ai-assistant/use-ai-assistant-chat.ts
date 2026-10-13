@@ -12,6 +12,7 @@ import { AiAssistantReplyDocument } from '@libs/graphql/operations/ai-assistant/
 import { AiConversationDocument } from '@libs/graphql/operations/ai-assistant/ai-conversation.generated';
 import { ConfirmAiActionDocument } from '@libs/graphql/operations/ai-assistant/confirm-ai-action.generated';
 import { CreateAiConversationDocument } from '@libs/graphql/operations/ai-assistant/create-ai-conversation.generated';
+import { DeleteAiConversationDocument } from '@libs/graphql/operations/ai-assistant/delete-ai-conversation.generated';
 import { RejectAiActionDocument } from '@libs/graphql/operations/ai-assistant/reject-ai-action.generated';
 
 import {
@@ -40,6 +41,7 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
   const [messages, setMessages] = useState<ChatLine[]>([]);
   const [actions, setActions] = useState<ChatAction[]>([]);
   const [replyInput, setReplyInput] = useState<ReplyInput | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const replyInputRef = useRef(replyInput);
 
   const [loadConversation, conversationQuery] = useLazyQuery(
@@ -48,6 +50,9 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
   );
   const [createConversation, createResult] = useMutation(
     CreateAiConversationDocument,
+  );
+  const [deleteConversationMutation, deleteResult] = useMutation(
+    DeleteAiConversationDocument,
   );
   const [confirmAction] = useMutation(ConfirmAiActionDocument);
   const [rejectAction] = useMutation(RejectAiActionDocument);
@@ -119,12 +124,41 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
   const errorText =
     conversationQuery.error?.message ||
     createResult.error?.message ||
+    deleteResult.error?.message ||
     reply.error?.message ||
     null;
 
   useEffect(() => {
     replyInputRef.current = replyInput;
   }, [replyInput]);
+
+  function goToDraft() {
+    setReplyInput(null);
+    setActiveId(null);
+    setMessages([]);
+    setActions([]);
+  }
+
+  function startConversation() {
+    if (streaming || creating) {
+      return;
+    }
+    if (activeId === null && messages.length === 0 && actions.length === 0) {
+      return;
+    }
+    goToDraft();
+  }
+
+  async function ensureConversation(): Promise<string | null> {
+    const result = await createConversation().catch(() => null);
+    const created = result?.data?.createAiConversation;
+    if (!created) {
+      return null;
+    }
+    setConversations((current) => [created, ...current]);
+    setActiveId(created.id);
+    return created.id;
+  }
 
   async function openConversation(id: string) {
     setReplyInput(null);
@@ -143,17 +177,23 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
     );
   }
 
-  async function startConversation(): Promise<string | null> {
-    const result = await createConversation().catch(() => null);
-    const created = result?.data?.createAiConversation;
-    if (!created) {
-      return null;
+  async function deleteConversation(id: string) {
+    if (deletingId || creating || streaming) {
+      return;
     }
-    setConversations((current) => [created, ...current]);
-    setActiveId(created.id);
-    setMessages([]);
-    setActions([]);
-    return created.id;
+    setDeletingId(id);
+    const result = await deleteConversationMutation({
+      variables: { id },
+    }).catch(() => null);
+    setDeletingId(null);
+    const deleted = result?.data?.deleteAiConversation;
+    if (!deleted) {
+      return;
+    }
+    setConversations((current) => current.filter((item) => item.id !== id));
+    if (activeId === id) {
+      goToDraft();
+    }
   }
 
   async function sendMessage(
@@ -166,7 +206,7 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
 
     let conversationId = activeId;
     if (!conversationId) {
-      conversationId = await startConversation();
+      conversationId = await ensureConversation();
       if (!conversationId) {
         return false;
       }
@@ -313,10 +353,12 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
     creating,
     opening,
     openingId: conversationQuery.variables?.id,
+    deletingId,
     streaming,
     errorText,
     openConversation,
     startConversation,
+    deleteConversation,
     sendMessage,
     onConfirm,
     onReject,

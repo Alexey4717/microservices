@@ -10,12 +10,12 @@ import type {
 import { MAX_TOOL_ROUNDS } from './agent-state';
 import type { PrismaService } from './prisma.service';
 import { estimateTokens } from './token-budget.service';
-import type { ToolRegistry } from './tool-registry';
 import {
   PROPOSE_CHECKOUT_TOOL,
   PROPOSE_NAVIGATION_TOOL,
   PROPOSE_UPDATE_NAME_TOOL,
 } from './tool-definitions';
+import type { ToolRegistry } from './tool-registry';
 import type { ActionProposal, ToolSession } from './tool-types';
 import { encodeToolCalls, encodeToolResult } from './transcript';
 
@@ -93,7 +93,9 @@ export async function loadLangGraphModules(): Promise<{
   return { langgraph, messages, openai };
 }
 
-export function createAgentStateAnnotation(Annotation: LangGraphModule['Annotation']) {
+export function createAgentStateAnnotation(
+  Annotation: LangGraphModule['Annotation'],
+) {
   return Annotation.Root({
     messages: Annotation<LangChainCoreMessages[]>({
       reducer: (left, right) => left.concat(right),
@@ -323,10 +325,7 @@ export async function buildAgentGraph(
         );
         toolNames.push(call.name);
         if (PROPOSE_TOOLS.has(call.name)) {
-          const action = await findPendingActionForThread(
-            deps.prisma,
-            session,
-          );
+          const action = await findPendingActionForThread(deps.prisma, session);
           if (action) {
             interruptPayload = action;
           }
@@ -348,10 +347,7 @@ export async function buildAgentGraph(
         toolMessages.push(message);
         toolNames.push(call.name);
         if (PROPOSE_TOOLS.has(call.name)) {
-          const action = await findPendingActionForThread(
-            deps.prisma,
-            session,
-          );
+          const action = await findPendingActionForThread(deps.prisma, session);
           if (action) {
             interruptPayload = action;
             runtime.onAction?.({
@@ -672,7 +668,10 @@ async function findStoredToolResult(
         toolCallId?: string;
         result?: string;
       };
-      if (parsed.toolCallId === toolCallId && typeof parsed.result === 'string') {
+      if (
+        parsed.toolCallId === toolCallId &&
+        typeof parsed.result === 'string'
+      ) {
         return parsed.result;
       }
     } catch {

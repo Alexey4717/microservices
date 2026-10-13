@@ -137,6 +137,7 @@ export type Mutation = {
   createCheckout: CheckoutPayload;
   createTelegramLink: TelegramLink;
   createVideoUpload: VideoUpload;
+  deleteAiConversation: AiConversationModel;
   login: AuthPayload;
   loginWithTelegram: AuthPayload;
   logout: Scalars['Boolean']['output'];
@@ -161,6 +162,10 @@ export type MutationCreateCheckoutArgs = {
 
 export type MutationCreateVideoUploadArgs = {
   input: CreateVideoUploadInput;
+};
+
+export type MutationDeleteAiConversationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 export type MutationLoginArgs = {

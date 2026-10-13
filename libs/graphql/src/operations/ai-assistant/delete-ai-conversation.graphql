@@ -1,0 +1,8 @@
+mutation DeleteAiConversation($id: ID!) {
+  deleteAiConversation(id: $id) {
+    id
+    title
+    createdAt
+    updatedAt
+  }
+}

@@ -3,7 +3,6 @@ export const NAVIGATION_PATHS = [
   '/profile',
   '/payments',
   '/videos',
-  '/ai-assistant',
 ] as const;
 
 export type NavigationPath = (typeof NAVIGATION_PATHS)[number];
@@ -14,14 +13,13 @@ export type CheckoutProvider = (typeof CHECKOUT_PROVIDERS)[number];
 
 export const DEFAULT_PRODUCT_CODE = 'PREMIUM';
 
-const APP_PREFIXES = ['/profile', '/payments', '/videos', '/ai-assistant'];
+const APP_PREFIXES = ['/profile', '/payments', '/videos'];
 
 const PATH_LABELS: Record<NavigationPath, string> = {
   '/': 'Главная',
   '/profile': 'Профиль',
   '/payments': 'Платежи',
   '/videos': 'Видео',
-  '/ai-assistant': 'ИИ-ассистент',
 };
 
 export type ProposeSuccess<T> = { ok: true } & T;
@@ -63,8 +61,7 @@ export function parseProposeNavigation(
   if (!path || !isNavigationPath(path)) {
     return {
       ok: false,
-      error:
-        'Можно перейти только на /, /profile, /payments, /videos или /ai-assistant',
+      error: 'Можно перейти только на /, /profile, /payments или /videos',
     };
   }
   return { ok: true, path };

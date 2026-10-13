@@ -34,8 +34,12 @@ describe('allowlist маршрутов', () => {
 
   it('игнорирует user id в аргументах перехода', () => {
     expect(
-      parseProposeNavigation({ path: '/ai-assistant', userId: 'attacker' }),
-    ).toEqual({ ok: true, path: '/ai-assistant' });
+      parseProposeNavigation({ path: '/profile', userId: 'attacker' }),
+    ).toEqual({ ok: true, path: '/profile' });
+  });
+
+  it('отклоняет удалённый маршрут /ai-assistant', () => {
+    expect(parseProposeNavigation({ path: '/ai-assistant' }).ok).toBe(false);
   });
 
   it('кладёт в промпт только путь приложения', () => {

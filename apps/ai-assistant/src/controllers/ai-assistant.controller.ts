@@ -11,6 +11,7 @@ import type {
   ConversationDetailResponse,
   ConversationResponse,
   CreateConversationRequest,
+  DeleteConversationRequest,
   GetConversationRequest,
   ListConversationsRequest,
   ListConversationsResponse,
@@ -35,6 +36,14 @@ export class AiAssistantController {
     metadata: Metadata,
   ): Promise<ConversationResponse> {
     return this.conversations.createConversation(data, metadata);
+  }
+
+  @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'DeleteConversation')
+  deleteConversation(
+    data: DeleteConversationRequest,
+    metadata: Metadata,
+  ): Promise<ConversationResponse> {
+    return this.conversations.deleteConversation(data, metadata);
   }
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'ListConversations')

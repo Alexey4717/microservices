@@ -2,10 +2,10 @@ import { AIMessage, HumanMessage, ToolMessage } from '@langchain/core/messages';
 import { MemorySaver } from '@langchain/langgraph';
 
 import {
+  type AgentChatModel,
   buildAgentGraph,
   finalAssistantText,
   readInterruptAction,
-  type AgentChatModel,
 } from './agent-graph';
 
 describe('agent-graph interrupt/resume', () => {
@@ -126,7 +126,7 @@ describe('agent-graph interrupt/resume', () => {
         chunkIds: [],
         assistantMessageId: threadId,
         temperature: 0.2,
-        pagePath: '/ai-assistant',
+        pagePath: '/profile',
         promptTokens: 0,
         completionTokens: 0,
       },

@@ -16,6 +16,7 @@ import type {
   ConversationDetailResponse,
   ConversationResponse,
   CreateConversationRequest,
+  DeleteConversationRequest,
   GetConversationRequest,
   ListConversationsRequest,
   ListConversationsResponse,
@@ -27,6 +28,10 @@ import type {
 interface AiAssistantGrpcClient {
   createConversation(
     data: CreateConversationRequest,
+    metadata: Metadata,
+  ): Observable<ConversationResponse>;
+  deleteConversation(
+    data: DeleteConversationRequest,
     metadata: Metadata,
   ): Observable<ConversationResponse>;
   listConversations(
@@ -72,6 +77,19 @@ export class AiAssistantGrpcService implements OnModuleInit {
     return this.callGraphql(() =>
       this.aiAssistant.createConversation(
         {},
+        createInternalMetadata(internalToken, userId),
+      ),
+    );
+  }
+
+  deleteConversation(
+    id: string,
+    internalToken: string,
+    userId: string,
+  ): Promise<ConversationResponse> {
+    return this.callGraphql(() =>
+      this.aiAssistant.deleteConversation(
+        { id },
         createInternalMetadata(internalToken, userId),
       ),
     );
