@@ -7,6 +7,7 @@ import { InternalTokenInterceptor, validateAiAssistantEnv } from '@libs/common';
 import { AiAssistantController } from './controllers/ai-assistant.controller';
 import { HealthController } from './controllers/health.controller';
 import { DomainGrpcModule } from './grpc/domain-grpc.module';
+import { AgentGraphService } from './services/agent-graph.service';
 import { ConversationsService } from './services/conversations.service';
 import { LlmService } from './services/llm.service';
 import { PaymentsTool } from './services/payments-tool';
@@ -46,6 +47,7 @@ import { GetVideoTool, ListVideosTool } from './services/video-tool';
     ProposeNavigationTool,
     ProposeUpdateNameTool,
     ToolRegistry,
+    AgentGraphService,
     PendingActionsService,
     ConversationsService,
     {

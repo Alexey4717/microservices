@@ -194,6 +194,27 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
     return true;
   }
 
+  async function refetchActiveConversation() {
+    const id = activeId ?? replyInputRef.current?.conversationId;
+    if (!id) {
+      return;
+    }
+    const result = await loadConversation({ variables: { id } });
+    const detail = result.data?.aiConversation;
+    if (!detail) {
+      return;
+    }
+    setMessages(visibleMessages(detail.messages));
+    setActions((current) =>
+      mergeActions(current, toActionCards(detail.actions)),
+    );
+    setConversations((current) =>
+      current.map((item) =>
+        item.id === detail.id ? { ...item, title: detail.title } : item,
+      ),
+    );
+  }
+
   async function onConfirm(action: ChatAction) {
     if (action.busy || action.status !== 'pending') {
       return;
@@ -239,6 +260,7 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
     if (payload.path) {
       router.push(payload.path);
     }
+    await refetchActiveConversation();
   }
 
   async function onReject(action: ChatAction) {
@@ -280,6 +302,7 @@ export function useAiAssistantChat(initialConversations: ConversationItem[]) {
         status: 'rejected',
       }),
     );
+    await refetchActiveConversation();
   }
 
   return {

@@ -1,7 +1,6 @@
 import { RpcException } from '@nestjs/microservices';
 
 import { Metadata, status } from '@grpc/grpc-js';
-import { describe, expect, it, vi } from 'vitest';
 
 import { USER_ID_METADATA_KEY } from '@libs/common';
 
@@ -18,13 +17,27 @@ function createService() {
   const updateMany = vi.fn();
   const createCheckout = vi.fn();
   const updateMe = vi.fn();
+  const resumeTurn = vi.fn();
   const service = new PendingActionsService(
-    { pendingAction: { findFirst, updateMany } } as never,
+    {
+      pendingAction: { findFirst, updateMany },
+      message: { create: vi.fn() },
+      turnTrace: { create: vi.fn() },
+      tokenUsage: { upsert: vi.fn() },
+    } as never,
     { createCheckout } as never,
     { updateMe } as never,
     { getOrThrow: vi.fn() } as never,
+    { resumeTurn } as never,
   );
-  return { service, findFirst, updateMany, createCheckout, updateMe };
+  return {
+    service,
+    findFirst,
+    updateMany,
+    createCheckout,
+    updateMe,
+    resumeTurn,
+  };
 }
 
 describe('чужое действие', () => {
@@ -67,5 +80,23 @@ describe('чужое действие', () => {
     ).rejects.toBeInstanceOf(RpcException);
 
     expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it('при пустом threadId не делает resume', async () => {
+    const { service, findFirst, updateMany, resumeTurn } = createService();
+    findFirst.mockResolvedValue({
+      id: 'action-1',
+      conversationId: 'c1',
+      userId: 'owner',
+      type: 'navigate',
+      payload: { path: '/profile', title: 'Перейти' },
+      status: 'pending',
+      threadId: null,
+    });
+    updateMany.mockResolvedValue({ count: 1 });
+
+    await service.reject({ actionId: 'action-1' }, metadata('owner'));
+
+    expect(resumeTurn).not.toHaveBeenCalled();
   });
 });

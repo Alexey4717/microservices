@@ -2,7 +2,6 @@ import { RpcException } from '@nestjs/microservices';
 
 import { Metadata, status } from '@grpc/grpc-js';
 import { firstValueFrom } from 'rxjs';
-import { describe, expect, it, vi } from 'vitest';
 
 import { USER_ID_METADATA_KEY } from '@libs/common';
 
@@ -17,7 +16,7 @@ function metadata(userId: string): Metadata {
 function createService() {
   const findFirst = vi.fn().mockResolvedValue(null);
   const messageCreate = vi.fn();
-  const createTurn = vi.fn();
+  const runTurn = vi.fn();
   const prisma = {
     conversation: {
       findFirst,
@@ -30,7 +29,7 @@ function createService() {
   };
   const service = new ConversationsService(
     prisma as never,
-    { createTurn } as never,
+    { createTurn: vi.fn() } as never,
     {
       schemaText: () => '',
       openAiTools: () => [],
@@ -40,8 +39,9 @@ function createService() {
     { fit: vi.fn() } as never,
     { get: vi.fn(), getOrThrow: vi.fn() } as never,
     { getVideo: vi.fn(), listVideos: vi.fn() } as never,
+    { runTurn } as never,
   );
-  return { service, findFirst, messageCreate, createTurn };
+  return { service, findFirst, messageCreate, runTurn };
 }
 
 describe('чужой диалог', () => {
@@ -67,8 +67,8 @@ describe('чужой диалог', () => {
     );
   });
 
-  it('не пишется и не вызывает модель', async () => {
-    const { service, findFirst, messageCreate, createTurn } = createService();
+  it('не пишется и не вызывает граф', async () => {
+    const { service, findFirst, messageCreate, runTurn } = createService();
 
     await expect(
       firstValueFrom(
@@ -85,6 +85,6 @@ describe('чужой диалог', () => {
       }),
     );
     expect(messageCreate).not.toHaveBeenCalled();
-    expect(createTurn).not.toHaveBeenCalled();
+    expect(runTurn).not.toHaveBeenCalled();
   });
 });

@@ -40,12 +40,25 @@ export class ProposeCheckoutTool implements AssistantTool {
     }
 
     const title = checkoutTitle(parsed.provider, parsed.productCode);
+    const existing = await findPendingByThread(
+      this.prisma,
+      session,
+      PendingActionType.checkout,
+    );
+    if (existing) {
+      return {
+        content: `Предложение оплаты создано и ждёт кнопку пользователя. id=${existing.id}. Платёж ещё не создан.`,
+        action: { id: existing.id, type: 'checkout', title },
+      };
+    }
+
     const action = await this.prisma.pendingAction.create({
       data: {
         conversationId: session.conversationId,
         userId: session.userId,
         type: PendingActionType.checkout,
         status: PendingActionStatus.pending,
+        threadId: session.threadId ?? null,
         payload: {
           provider: parsed.provider,
           productCode: parsed.productCode,
@@ -79,12 +92,25 @@ export class ProposeNavigationTool implements AssistantTool {
     }
 
     const title = navigationTitle(parsed.path);
+    const existing = await findPendingByThread(
+      this.prisma,
+      session,
+      PendingActionType.navigate,
+    );
+    if (existing) {
+      return {
+        content: `Предложение перехода создано и ждёт кнопку пользователя. id=${existing.id}. Переход ещё не выполнен.`,
+        action: { id: existing.id, type: 'navigate', title },
+      };
+    }
+
     const action = await this.prisma.pendingAction.create({
       data: {
         conversationId: session.conversationId,
         userId: session.userId,
         type: PendingActionType.navigate,
         status: PendingActionStatus.pending,
+        threadId: session.threadId ?? null,
         payload: {
           path: parsed.path,
           title,
@@ -117,12 +143,25 @@ export class ProposeUpdateNameTool implements AssistantTool {
     }
 
     const title = updateNameTitle(parsed.name);
+    const existing = await findPendingByThread(
+      this.prisma,
+      session,
+      PendingActionType.update_name,
+    );
+    if (existing) {
+      return {
+        content: `Предложение смены имени создано и ждёт кнопку пользователя. id=${existing.id}. Имя ещё не изменено.`,
+        action: { id: existing.id, type: 'update_name', title },
+      };
+    }
+
     const action = await this.prisma.pendingAction.create({
       data: {
         conversationId: session.conversationId,
         userId: session.userId,
         type: PendingActionType.update_name,
         status: PendingActionStatus.pending,
+        threadId: session.threadId ?? null,
         payload: {
           name: parsed.name,
           title,
@@ -135,4 +174,25 @@ export class ProposeUpdateNameTool implements AssistantTool {
       action: { id: action.id, type: 'update_name', title },
     };
   }
+}
+
+async function findPendingByThread(
+  prisma: PrismaService,
+  session: ToolSession,
+  type: PendingActionType,
+) {
+  const threadId = session.threadId?.trim();
+  if (!threadId || !session.conversationId) {
+    return null;
+  }
+  return prisma.pendingAction.findFirst({
+    where: {
+      conversationId: session.conversationId,
+      userId: session.userId,
+      threadId,
+      type,
+      status: PendingActionStatus.pending,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
 }

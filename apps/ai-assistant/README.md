@@ -61,6 +61,17 @@ pnpm run start:all
 
 Поиск справки идёт по общей таблице `KnowledgeChunk` (pgvector), без фильтра по user id.
 
+## LangGraph (HITL)
+
+Ход `SendMessage` после подготовки истории идёт через OSS LangGraph (`StateGraph`), а не через ручной `while` tool-loop.
+
+- **State**: `messages`, `toolRound`, `toolNames`, `chunkIds`, `assistantMessageId`, `temperature`, `pagePath`, счётчики токенов.
+- **Nodes**: `agent` (ChatOpenAI на том же `LLM_BASE_URL` / модели, что и Ollama) и `tools` (через существующий `ToolRegistry`). Лимит раундов инструментов — 4.
+- **`thread_id`**: id сообщения ассистента на этот ход (`assistantMessageId`). Тот же id пишется в `PendingAction.threadId`.
+- **Checkpoint**: `@langchain/langgraph-checkpoint-postgres` на `AI_ASSISTANT_DATABASE_URL`. При старте модуля вызывается `setup()` (таблицы checkpoint в той же БД).
+- **Interrupt ↔ confirm/reject**: на `propose_*` узел `tools` создаёт pending (идемпотентно по `threadId`), отдаёт карточку в SSE и вызывает `interrupt({ actionId, type, title })`. Стрим завершается с `done: true` без финального текста. `ConfirmAction` / `RejectAction` после side effect делают `Command({ resume })`; граф продолжает ход, финальный ответ и trace сохраняются в БД. Старые pending без `threadId` — без resume (как раньше).
+- **Платное не используется**: локальная Ollama, OSS LangGraph/LangChain. LangSmith / Cloud не подключены. Summary и embeddings по-прежнему через `LlmService`.
+
 gRPC требует `x-internal-token`. Health HTTP — нет.
 
 ## Оценка на локальной модели

@@ -33,6 +33,7 @@ import {
   selectUncoveredMessages,
   takeSummaryPrefix,
 } from './conversation-summary';
+import { AgentGraphService } from './agent-graph.service';
 import { FilesGrpcService } from './files-grpc.service';
 import {
   type FocusedVideoSnapshot,
@@ -55,15 +56,11 @@ import { ToolRegistry } from './tool-registry';
 import type { ToolSession } from './tool-types';
 import {
   type StoredMessage,
-  encodeToolCalls,
-  encodeToolResult,
   titleFromUserMessage,
   toBudgetMessages,
   toLlmMessages,
 } from './transcript';
 import { toVideoToolSnapshot } from './video-tool';
-
-const MAX_TOOL_ROUNDS = 4;
 
 type ConversationWithMessages = Conversation & {
   messages: Message[];
@@ -82,6 +79,7 @@ export class ConversationsService {
     private readonly budget: TokenBudgetService,
     private readonly config: ConfigService,
     private readonly files: FilesGrpcService,
+    private readonly agentGraph: AgentGraphService,
   ) {}
 
   async createConversation(
@@ -224,115 +222,69 @@ export class ConversationsService {
     }
 
     const assistantMessageId = crypto.randomUUID();
-    const openAiTools = this.tools.openAiTools();
-    const toolNames: string[] = [];
-    let toolRounds = 0;
+    await this.assertDailyLimit(userId);
 
-    while (!signal.aborted) {
-      await this.assertDailyLimit(userId);
-      const allowTools = toolRounds < MAX_TOOL_ROUNDS;
-      const turn = await this.llm.createTurn({
-        messages: llmMessages,
-        tools: allowTools ? openAiTools : [],
-        temperature,
-        signal,
-        onTextDelta: (delta) => {
-          this.emit(subscriber, {
-            conversationId: conversation.id,
-            messageId: assistantMessageId,
-            delta,
-            done: false,
-            toolName: '',
-          });
-        },
-      });
-      if (signal.aborted) {
-        return;
-      }
-
-      await this.addUsage(userId, turn.promptTokens, turn.completionTokens);
-
-      if (turn.toolCalls.length > 0 && allowTools) {
-        await this.prisma.message.create({
-          data: {
-            conversationId: conversation.id,
-            role: MessageRole.assistant,
-            content: encodeToolCalls(turn.toolCalls),
-            promptTokens: turn.promptTokens,
-            completionTokens: turn.completionTokens,
-          },
-        });
-        llmMessages.push({
-          role: 'assistant',
-          content: null,
-          tool_calls: turn.toolCalls.map((call) => ({
-            id: call.id,
-            type: 'function' as const,
-            function: { name: call.name, arguments: call.arguments },
-          })),
-        });
-
-        for (const call of turn.toolCalls) {
-          const args = parseToolArguments(call.arguments);
-          const outcome = await this.tools.execute(call.name, args, session);
-          toolNames.push(call.name);
-          const stored = encodeToolResult(call.id, outcome.content);
-          await this.prisma.message.create({
-            data: {
-              conversationId: conversation.id,
-              role: MessageRole.tool,
-              content: stored,
-              toolName: call.name,
-            },
-          });
-          llmMessages.push({
-            role: 'tool',
-            tool_call_id: call.id,
-            content: outcome.content,
-          });
-          this.emit(subscriber, {
-            conversationId: conversation.id,
-            messageId: assistantMessageId,
-            delta: '',
-            done: false,
-            toolName: call.name,
-            action: outcome.action,
-          });
-        }
-
-        toolRounds += 1;
-        continue;
-      }
-
-      const answer = turn.content;
-      if (!turn.streamedText && answer) {
+    const turn = await this.agentGraph.runTurn({
+      messages: llmMessages,
+      assistantMessageId,
+      temperature,
+      pagePath,
+      chunkIds,
+      session: {
+        ...session,
+        threadId: assistantMessageId,
+      },
+      signal,
+      onTextDelta: (delta) => {
         this.emit(subscriber, {
           conversationId: conversation.id,
           messageId: assistantMessageId,
-          delta: answer,
+          delta,
           done: false,
           toolName: '',
         });
-      }
-
-      await this.prisma.message.create({
-        data: {
-          id: assistantMessageId,
+      },
+      onToolName: (toolName) => {
+        this.emit(subscriber, {
           conversationId: conversation.id,
-          role: MessageRole.assistant,
-          content: answer,
-          promptTokens: turn.promptTokens,
-          completionTokens: turn.completionTokens,
-        },
-      });
-      await this.storeTrace({
-        conversationId: conversation.id,
-        messageId: assistantMessageId,
-        toolNames,
-        chunkIds,
-        pagePath,
-        temperature,
-      });
+          messageId: assistantMessageId,
+          delta: '',
+          done: false,
+          toolName,
+        });
+      },
+      onAction: (action) => {
+        this.emit(subscriber, {
+          conversationId: conversation.id,
+          messageId: assistantMessageId,
+          delta: '',
+          done: false,
+          toolName: '',
+          action,
+        });
+      },
+    });
+    if (signal.aborted) {
+      return;
+    }
+
+    await this.addUsage(userId, turn.promptTokens, turn.completionTokens);
+
+    if (turn.interrupted) {
+      if (turn.action) {
+        this.emit(subscriber, {
+          conversationId: conversation.id,
+          messageId: assistantMessageId,
+          delta: '',
+          done: false,
+          toolName: '',
+          action: {
+            id: turn.action.actionId,
+            type: turn.action.type,
+            title: turn.action.title,
+          },
+        });
+      }
       this.emit(subscriber, {
         conversationId: conversation.id,
         messageId: assistantMessageId,
@@ -342,6 +294,33 @@ export class ConversationsService {
       });
       return;
     }
+
+    const answer = turn.content;
+    await this.prisma.message.create({
+      data: {
+        id: assistantMessageId,
+        conversationId: conversation.id,
+        role: MessageRole.assistant,
+        content: answer,
+        promptTokens: turn.promptTokens,
+        completionTokens: turn.completionTokens,
+      },
+    });
+    await this.storeTrace({
+      conversationId: conversation.id,
+      messageId: assistantMessageId,
+      toolNames: turn.toolNames,
+      chunkIds: turn.chunkIds,
+      pagePath,
+      temperature,
+    });
+    this.emit(subscriber, {
+      conversationId: conversation.id,
+      messageId: assistantMessageId,
+      delta: '',
+      done: true,
+      toolName: '',
+    });
   }
 
   private async prepareHistory(input: {
@@ -655,17 +634,6 @@ function toDetail(
     messages: conversation.messages.map(toMessageResponse),
     actions: (conversation.pendingActions ?? []).map(toPendingView),
   };
-}
-
-function parseToolArguments(raw: string): unknown {
-  if (!raw.trim()) {
-    return {};
-  }
-  try {
-    return JSON.parse(raw) as unknown;
-  } catch {
-    return {};
-  }
 }
 
 function rpcError(code: status, message: string): RpcException {

@@ -3,6 +3,8 @@ export interface ToolSession {
   internalToken: string;
   conversationId?: string;
   pagePath?: string | null;
+  /** LangGraph thread_id (= assistantMessageId) для HITL interrupt/resume. */
+  threadId?: string;
 }
 
 export interface ActionProposal {

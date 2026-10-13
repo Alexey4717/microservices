@@ -72,10 +72,12 @@ model PendingAction {
   type           PendingActionType
   payload        Json
   status         PendingActionStatus @default(pending)
+  threadId       String?
   createdAt      DateTime            @default(now())
 
   @@index([conversationId, createdAt])
   @@index([userId, status])
+  @@index([threadId])
 }
 
 model TurnTrace {
