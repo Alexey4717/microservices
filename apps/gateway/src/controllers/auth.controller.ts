@@ -9,7 +9,7 @@ import {
   oauthSuccessRedirectFor,
   parseOauthRedirectUrl,
 } from '../helpers/oauth-failure-redirect';
-import { AuthService } from '../services/auth.service';
+import { OauthUpsertUseCase } from '../services/oauth-upsert.use-case';
 import type { OauthProfile } from '../types/auth.types';
 import { renderOauthSuccessHtml } from './oauth-success.html';
 
@@ -18,7 +18,7 @@ export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   constructor(
-    private readonly authService: AuthService,
+    private readonly oauthUpsertUseCase: OauthUpsertUseCase,
     private readonly configService: ConfigService,
   ) {}
 
@@ -57,7 +57,7 @@ export class AuthController {
       return;
     }
 
-    const tokens = await this.authService.oauthUpsert(profile);
+    const tokens = await this.oauthUpsertUseCase.execute(profile);
     const redirectBase = oauthSuccessRedirectFor(req, this.configService);
     const redirectUrl = parseOauthRedirectUrl(redirectBase);
     if (redirectBase && !redirectUrl) {

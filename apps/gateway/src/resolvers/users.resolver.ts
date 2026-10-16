@@ -12,24 +12,30 @@ import { toUserModel } from '../mappers/auth.mapper';
 import { TelegramLink } from '../models/telegram-link.model';
 import { TelegramLinkedPayload } from '../models/telegram-linked.model';
 import { UserModel } from '../models/user.model';
-import { AuthService } from '../services/auth.service';
+import { CreateTelegramLinkUseCase } from '../services/create-telegram-link.use-case';
+import { GetMeUseCase } from '../services/get-me.use-case';
 import {
   type TelegramLinkedEvent,
   TelegramLinkedService,
 } from '../services/telegram-linked.service';
+import { UpdateMeUseCase } from '../services/update-me.use-case';
+import { UploadAvatarUseCase } from '../services/upload-avatar.use-case';
 import type { AuthenticatedUser } from '../types/auth.types';
 
 @Resolver(() => UserModel)
 export class UsersResolver {
   constructor(
-    private readonly authService: AuthService,
+    private readonly getMeUseCase: GetMeUseCase,
+    private readonly updateMeUseCase: UpdateMeUseCase,
+    private readonly uploadAvatarUseCase: UploadAvatarUseCase,
+    private readonly createTelegramLinkUseCase: CreateTelegramLinkUseCase,
     private readonly telegramLinkedService: TelegramLinkedService,
   ) {}
 
   @Query(() => UserModel)
   @UseGuards(GqlAuthGuard)
   async me(@CurrentUser() user: AuthenticatedUser): Promise<UserModel> {
-    const profile = await this.authService.me(user.userId);
+    const profile = await this.getMeUseCase.execute(user.userId);
     return toUserModel(profile);
   }
 
@@ -39,7 +45,7 @@ export class UsersResolver {
     @Args('input') input: UpdateMeInput,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<UserModel> {
-    const profile = await this.authService.updateMe(user.userId, input);
+    const profile = await this.updateMeUseCase.execute(user.userId, input);
     return toUserModel(profile);
   }
 
@@ -51,7 +57,10 @@ export class UsersResolver {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<UserModel> {
     const uploaded = await readGraphqlUpload(file);
-    const profile = await this.authService.uploadAvatar(user.userId, uploaded);
+    const profile = await this.uploadAvatarUseCase.execute(
+      user.userId,
+      uploaded,
+    );
     return toUserModel(profile);
   }
 
@@ -60,7 +69,7 @@ export class UsersResolver {
   createTelegramLink(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<TelegramLink> {
-    return this.authService.createTelegramLink(user.userId);
+    return this.createTelegramLinkUseCase.execute(user.userId);
   }
 
   @Subscription(() => TelegramLinkedPayload, {

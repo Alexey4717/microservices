@@ -12,10 +12,38 @@ import {
 
 import { AuthController } from './controllers/auth.controller';
 import { PaymentsEventsController } from './controllers/payments-events.controller';
-import { AuthService } from './services/auth.service';
+import { AuthSupportHelper } from './services/auth-support.helper';
+import { ConsumeTelegramLinkTokenUseCase } from './services/consume-telegram-link-token.use-case';
+import { CreateTelegramLinkTokenUseCase } from './services/create-telegram-link-token.use-case';
+import { GetMeByTelegramUseCase } from './services/get-me-by-telegram.use-case';
+import { GetMeUseCase } from './services/get-me.use-case';
+import { LoginUserUseCase } from './services/login-user.use-case';
+import { LoginWithTelegramUseCase } from './services/login-with-telegram.use-case';
+import { LogoutUserUseCase } from './services/logout-user.use-case';
+import { OauthUpsertUseCase } from './services/oauth-upsert.use-case';
 import { PaymentsEventsService } from './services/payments-events.service';
 import { PrismaService } from './services/prisma.service';
+import { RefreshTokensUseCase } from './services/refresh-tokens.use-case';
+import { RegisterUserUseCase } from './services/register-user.use-case';
 import { TelegramLinkTokenCleanupService } from './services/telegram-link-token-cleanup.service';
+import { UpdateMeUseCase } from './services/update-me.use-case';
+import { UpsertTelegramProfileUseCase } from './services/upsert-telegram-profile.use-case';
+
+const authUseCases = [
+  AuthSupportHelper,
+  RegisterUserUseCase,
+  LoginUserUseCase,
+  LoginWithTelegramUseCase,
+  OauthUpsertUseCase,
+  RefreshTokensUseCase,
+  LogoutUserUseCase,
+  GetMeUseCase,
+  UpdateMeUseCase,
+  GetMeByTelegramUseCase,
+  CreateTelegramLinkTokenUseCase,
+  ConsumeTelegramLinkTokenUseCase,
+  UpsertTelegramProfileUseCase,
+];
 
 @Module({
   imports: [
@@ -53,7 +81,7 @@ import { TelegramLinkTokenCleanupService } from './services/telegram-link-token-
   controllers: [AuthController, PaymentsEventsController],
   providers: [
     PrismaService,
-    AuthService,
+    ...authUseCases,
     PaymentsEventsService,
     TelegramLinkTokenCleanupService,
     InternalTokenInterceptor,

@@ -20,14 +20,24 @@ import type {
   SendMessageRequest,
 } from '@libs/proto';
 
-import { ConversationsService } from '../services/conversations.service';
-import { PendingActionsService } from '../services/pending-actions.service';
+import { ConfirmActionUseCase } from '../services/confirm-action.use-case';
+import { CreateConversationUseCase } from '../services/create-conversation.use-case';
+import { DeleteConversationUseCase } from '../services/delete-conversation.use-case';
+import { GetConversationUseCase } from '../services/get-conversation.use-case';
+import { ListConversationsUseCase } from '../services/list-conversations.use-case';
+import { RejectActionUseCase } from '../services/reject-action.use-case';
+import { SendMessageUseCase } from '../services/send-message.use-case';
 
 @Controller()
 export class AiAssistantController {
   constructor(
-    private readonly conversations: ConversationsService,
-    private readonly pendingActions: PendingActionsService,
+    private readonly createConversationUseCase: CreateConversationUseCase,
+    private readonly deleteConversationUseCase: DeleteConversationUseCase,
+    private readonly listConversationsUseCase: ListConversationsUseCase,
+    private readonly getConversationUseCase: GetConversationUseCase,
+    private readonly sendMessageUseCase: SendMessageUseCase,
+    private readonly confirmActionUseCase: ConfirmActionUseCase,
+    private readonly rejectActionUseCase: RejectActionUseCase,
   ) {}
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'CreateConversation')
@@ -35,7 +45,7 @@ export class AiAssistantController {
     data: CreateConversationRequest,
     metadata: Metadata,
   ): Promise<ConversationResponse> {
-    return this.conversations.createConversation(data, metadata);
+    return this.createConversationUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'DeleteConversation')
@@ -43,7 +53,7 @@ export class AiAssistantController {
     data: DeleteConversationRequest,
     metadata: Metadata,
   ): Promise<ConversationResponse> {
-    return this.conversations.deleteConversation(data, metadata);
+    return this.deleteConversationUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'ListConversations')
@@ -51,7 +61,7 @@ export class AiAssistantController {
     data: ListConversationsRequest,
     metadata: Metadata,
   ): Promise<ListConversationsResponse> {
-    return this.conversations.listConversations(data, metadata);
+    return this.listConversationsUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'GetConversation')
@@ -59,7 +69,7 @@ export class AiAssistantController {
     data: GetConversationRequest,
     metadata: Metadata,
   ): Promise<ConversationDetailResponse> {
-    return this.conversations.getConversation(data, metadata);
+    return this.getConversationUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'SendMessage')
@@ -67,7 +77,7 @@ export class AiAssistantController {
     data: SendMessageRequest,
     metadata: Metadata,
   ): Observable<SendMessageEvent> {
-    return this.conversations.sendMessage(data, metadata);
+    return this.sendMessageUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'ConfirmAction')
@@ -75,7 +85,7 @@ export class AiAssistantController {
     data: ConfirmActionRequest,
     metadata: Metadata,
   ): Promise<ActionResult> {
-    return this.pendingActions.confirm(data, metadata);
+    return this.confirmActionUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(AI_ASSISTANT_SERVICE_NAME, 'RejectAction')
@@ -83,6 +93,6 @@ export class AiAssistantController {
     data: RejectActionRequest,
     metadata: Metadata,
   ): Promise<ActionResult> {
-    return this.pendingActions.reject(data, metadata);
+    return this.rejectActionUseCase.execute(data, metadata);
   }
 }

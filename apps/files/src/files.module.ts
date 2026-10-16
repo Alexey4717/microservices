@@ -6,10 +6,13 @@ import { InternalTokenInterceptor, validateFilesEnv } from '@libs/common';
 
 import { FilesController } from './controllers/files.controller';
 import { HealthController } from './controllers/health.controller';
+import { CompleteVideoUploadUseCase } from './services/complete-video-upload.use-case';
+import { CreateVideoUploadUseCase } from './services/create-video-upload.use-case';
 import { FilesService } from './services/files.service';
+import { GetVideoUseCase } from './services/get-video.use-case';
+import { ListVideosUseCase } from './services/list-videos.use-case';
 import { PrismaService } from './services/prisma.service';
 import { StorageService } from './services/storage.service';
-import { VideosService } from './services/videos.service';
 
 @Module({
   imports: [
@@ -24,7 +27,10 @@ import { VideosService } from './services/videos.service';
     PrismaService,
     StorageService,
     FilesService,
-    VideosService,
+    CreateVideoUploadUseCase,
+    CompleteVideoUploadUseCase,
+    ListVideosUseCase,
+    GetVideoUseCase,
     {
       provide: APP_INTERCEPTOR,
       useClass: InternalTokenInterceptor,

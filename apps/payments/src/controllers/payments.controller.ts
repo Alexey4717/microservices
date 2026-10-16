@@ -13,18 +13,24 @@ import type {
   PaymentResponse,
 } from '@libs/proto';
 
-import { PaymentsService } from '../services/payments.service';
+import { CreateCheckoutUseCase } from '../services/create-checkout.use-case';
+import { GetPaymentUseCase } from '../services/get-payment.use-case';
+import { ListMyPaymentsUseCase } from '../services/list-my-payments.use-case';
 
 @Controller()
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly createCheckoutUseCase: CreateCheckoutUseCase,
+    private readonly getPaymentUseCase: GetPaymentUseCase,
+    private readonly listMyPaymentsUseCase: ListMyPaymentsUseCase,
+  ) {}
 
   @GrpcMethod(PAYMENTS_SERVICE_NAME, 'CreateCheckout')
   createCheckout(
     data: CreateCheckoutRequest,
     metadata: Metadata,
   ): Promise<CheckoutResponse> {
-    return this.paymentsService.createCheckout(data, metadata);
+    return this.createCheckoutUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(PAYMENTS_SERVICE_NAME, 'GetPayment')
@@ -32,7 +38,7 @@ export class PaymentsController {
     data: GetPaymentRequest,
     metadata: Metadata,
   ): Promise<PaymentResponse> {
-    return this.paymentsService.getPayment(data, metadata);
+    return this.getPaymentUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(PAYMENTS_SERVICE_NAME, 'ListMyPayments')
@@ -40,6 +46,6 @@ export class PaymentsController {
     data: ListMyPaymentsRequest,
     metadata: Metadata,
   ): Promise<ListMyPaymentsResponse> {
-    return this.paymentsService.listMyPayments(data, metadata);
+    return this.listMyPaymentsUseCase.execute(data, metadata);
   }
 }

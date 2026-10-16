@@ -14,13 +14,21 @@ import {
 } from '../helpers/refresh-cookie';
 import { toAuthPayload } from '../mappers/auth.mapper';
 import { AuthPayload } from '../models/auth-payload.model';
-import { AuthService } from '../services/auth.service';
+import { LoginWithTelegramUseCase } from '../services/login-with-telegram.use-case';
+import { LoginUseCase } from '../services/login.use-case';
+import { LogoutUseCase } from '../services/logout.use-case';
+import { RefreshUseCase } from '../services/refresh.use-case';
+import { RegisterUseCase } from '../services/register.use-case';
 import type { GqlContext } from '../types/gql-context';
 
 @Resolver()
 export class AuthResolver {
   constructor(
-    private readonly authService: AuthService,
+    private readonly registerUseCase: RegisterUseCase,
+    private readonly loginUseCase: LoginUseCase,
+    private readonly loginWithTelegramUseCase: LoginWithTelegramUseCase,
+    private readonly refreshUseCase: RefreshUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
     private readonly configService: ConfigService,
   ) {}
 
@@ -29,7 +37,7 @@ export class AuthResolver {
     @Args('input') input: RegisterInput,
     @Context() context: GqlContext,
   ): Promise<AuthPayload> {
-    const result = await this.authService.register(input);
+    const result = await this.registerUseCase.execute(input);
     this.writeRefreshCookie(context, result.refreshToken);
     return toAuthPayload(result);
   }
@@ -39,7 +47,7 @@ export class AuthResolver {
     @Args('input') input: LoginInput,
     @Context() context: GqlContext,
   ): Promise<AuthPayload> {
-    const result = await this.authService.login(input);
+    const result = await this.loginUseCase.execute(input);
     this.writeRefreshCookie(context, result.refreshToken);
     return toAuthPayload(result);
   }
@@ -49,7 +57,7 @@ export class AuthResolver {
     @Args('initData', { type: () => String }) initData: string,
     @Context() context: GqlContext,
   ): Promise<AuthPayload> {
-    const result = await this.authService.loginWithTelegram(initData);
+    const result = await this.loginWithTelegramUseCase.execute(initData);
     this.writeRefreshCookie(context, result.refreshToken);
     return toAuthPayload(result);
   }
@@ -61,7 +69,7 @@ export class AuthResolver {
     @Context() context: GqlContext,
   ): Promise<AuthPayload> {
     const refreshToken = this.requireRefreshToken(context, input?.refreshToken);
-    const result = await this.authService.refresh(refreshToken);
+    const result = await this.refreshUseCase.execute(refreshToken);
     this.writeRefreshCookie(context, result.refreshToken);
     return toAuthPayload(result);
   }
@@ -73,7 +81,7 @@ export class AuthResolver {
     @Context() context: GqlContext,
   ): Promise<boolean> {
     const refreshToken = this.requireRefreshToken(context, input?.refreshToken);
-    await this.authService.logout(refreshToken);
+    await this.logoutUseCase.execute(refreshToken);
     clearRefreshTokenCookie(context.res, this.isSecureCookie());
     return true;
   }

@@ -4,11 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { Bot, type Context, webhookCallback } from 'grammy';
 
+import { type TelegramBotMessage } from '../helpers/telegram-bot-message';
 import { TELEGRAM_KEYBOARD_TEXTS } from '../helpers/telegram-mini-app';
-import {
-  type TelegramBotMessage,
-  TelegramStartService,
-} from './telegram-start.service';
+import { HandleHowToLinkUseCase } from './handle-how-to-link.use-case';
+import { HandleMyVideosUseCase } from './handle-my-videos.use-case';
+import { HandleStartUseCase } from './handle-start.use-case';
 
 type WebhookHandler = (
   req: Request,
@@ -24,7 +24,9 @@ export class TelegramBotService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly telegramStart: TelegramStartService,
+    private readonly handleStartUseCase: HandleStartUseCase,
+    private readonly handleMyVideosUseCase: HandleMyVideosUseCase,
+    private readonly handleHowToLinkUseCase: HandleHowToLinkUseCase,
   ) {}
 
   onModuleInit(): void {
@@ -40,7 +42,7 @@ export class TelegramBotService implements OnModuleInit {
     this.bot.command('start', async (ctx) => {
       const telegramId = ctx.from?.id != null ? String(ctx.from.id) : '';
       const payload = typeof ctx.match === 'string' ? ctx.match : '';
-      const messages = await this.telegramStart.handleStart(
+      const messages = await this.handleStartUseCase.execute(
         telegramId,
         payload,
       );
@@ -48,11 +50,11 @@ export class TelegramBotService implements OnModuleInit {
     });
     this.bot.hears(TELEGRAM_KEYBOARD_TEXTS.myVideos, async (ctx) => {
       const telegramId = ctx.from?.id != null ? String(ctx.from.id) : '';
-      const messages = await this.telegramStart.handleMyVideos(telegramId);
+      const messages = await this.handleMyVideosUseCase.execute(telegramId);
       await this.replyMessages(ctx, messages);
     });
     this.bot.hears(TELEGRAM_KEYBOARD_TEXTS.howToLink, async (ctx) => {
-      await this.replyMessages(ctx, this.telegramStart.handleHowToLink());
+      await this.replyMessages(ctx, this.handleHowToLinkUseCase.execute());
     });
 
     this.webhookHandler = webhookCallback(this.bot, 'express', {

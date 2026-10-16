@@ -24,10 +24,20 @@ import { AuthResolver } from './resolvers/auth.resolver';
 import { PaymentsResolver } from './resolvers/payments.resolver';
 import { UsersResolver } from './resolvers/users.resolver';
 import { VideosResolver } from './resolvers/videos.resolver';
-import { AuthService } from './services/auth.service';
+import { CreateTelegramLinkUseCase } from './services/create-telegram-link.use-case';
+import { GetMeUseCase } from './services/get-me.use-case';
+import { LoginWithTelegramUseCase } from './services/login-with-telegram.use-case';
+import { LoginUseCase } from './services/login.use-case';
+import { LogoutUseCase } from './services/logout.use-case';
+import { OauthUpsertUseCase } from './services/oauth-upsert.use-case';
 import { PrismaService } from './services/prisma.service';
+import { RefreshUseCase } from './services/refresh.use-case';
+import { RegisterUseCase } from './services/register.use-case';
 import { TelegramLinkedService } from './services/telegram-linked.service';
+import { UpdateMeUseCase } from './services/update-me.use-case';
+import { UploadAvatarUseCase } from './services/upload-avatar.use-case';
 import { UserProjectionService } from './services/user-projection.service';
+import { UserWriteThroughHelper } from './services/user-write-through.helper';
 import { GithubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -78,7 +88,17 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PrismaService,
     UserProjectionService,
     TelegramLinkedService,
-    AuthService,
+    UserWriteThroughHelper,
+    RegisterUseCase,
+    LoginUseCase,
+    LoginWithTelegramUseCase,
+    RefreshUseCase,
+    LogoutUseCase,
+    OauthUpsertUseCase,
+    GetMeUseCase,
+    UpdateMeUseCase,
+    UploadAvatarUseCase,
+    CreateTelegramLinkUseCase,
     AuthResolver,
     UsersResolver,
     PaymentsResolver,

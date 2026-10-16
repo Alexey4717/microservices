@@ -13,13 +13,15 @@ import {
 import { HealthController } from './controllers/health.controller';
 import { PaymentsController } from './controllers/payments.controller';
 import { WebhooksController } from './controllers/webhooks.controller';
-import { PaymentsService } from './services/payments.service';
+import { CreateCheckoutUseCase } from './services/create-checkout.use-case';
+import { GetPaymentUseCase } from './services/get-payment.use-case';
+import { HandleWebhookUseCase } from './services/handle-webhook.use-case';
+import { ListMyPaymentsUseCase } from './services/list-my-payments.use-case';
 import { PrismaService } from './services/prisma.service';
 import { PaypalClient } from './services/providers/paypal-client';
 import { PaypalPaymentStrategy } from './services/providers/paypal.strategy';
 import { PaymentProviderRegistry } from './services/providers/provider-registry';
 import { StripePaymentStrategy } from './services/providers/stripe.strategy';
-import { WebhookService } from './services/webhook.service';
 
 @Module({
   imports: [
@@ -49,8 +51,10 @@ import { WebhookService } from './services/webhook.service';
     StripePaymentStrategy,
     PaypalPaymentStrategy,
     PaymentProviderRegistry,
-    PaymentsService,
-    WebhookService,
+    CreateCheckoutUseCase,
+    GetPaymentUseCase,
+    ListMyPaymentsUseCase,
+    HandleWebhookUseCase,
     {
       provide: APP_INTERCEPTOR,
       useClass: InternalTokenInterceptor,

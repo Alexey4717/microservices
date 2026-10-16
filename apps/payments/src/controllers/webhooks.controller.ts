@@ -11,11 +11,11 @@ import {
 import type { Request } from 'express';
 import type { IncomingHttpHeaders } from 'node:http';
 
-import { WebhookService } from '../services/webhook.service';
+import { HandleWebhookUseCase } from '../services/handle-webhook.use-case';
 
 @Controller()
 export class WebhooksController {
-  constructor(private readonly webhookService: WebhookService) {}
+  constructor(private readonly handleWebhookUseCase: HandleWebhookUseCase) {}
 
   @Post('webhooks/stripe')
   @HttpCode(200)
@@ -45,7 +45,7 @@ export class WebhooksController {
       throw new BadRequestException('Missing raw body');
     }
 
-    await this.webhookService.handle(provider, headers, rawBody);
+    await this.handleWebhookUseCase.execute(provider, headers, rawBody);
     return { received: true };
   }
 }

@@ -16,14 +16,20 @@ import type {
   VideoResponse,
 } from '@libs/proto';
 
+import { CompleteVideoUploadUseCase } from '../services/complete-video-upload.use-case';
+import { CreateVideoUploadUseCase } from '../services/create-video-upload.use-case';
 import { FilesService } from '../services/files.service';
-import { VideosService } from '../services/videos.service';
+import { GetVideoUseCase } from '../services/get-video.use-case';
+import { ListVideosUseCase } from '../services/list-videos.use-case';
 
 @Controller()
 export class FilesController {
   constructor(
     private readonly filesService: FilesService,
-    private readonly videosService: VideosService,
+    private readonly createVideoUploadUseCase: CreateVideoUploadUseCase,
+    private readonly completeVideoUploadUseCase: CompleteVideoUploadUseCase,
+    private readonly listVideosUseCase: ListVideosUseCase,
+    private readonly getVideoUseCase: GetVideoUseCase,
   ) {}
 
   @GrpcMethod(FILES_SERVICE_NAME, 'UploadFile')
@@ -39,7 +45,7 @@ export class FilesController {
     data: CreateVideoUploadRequest,
     metadata: Metadata,
   ): Promise<CreateVideoUploadResponse> {
-    return this.videosService.createVideoUpload(data, metadata);
+    return this.createVideoUploadUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(FILES_SERVICE_NAME, 'CompleteVideoUpload')
@@ -47,7 +53,7 @@ export class FilesController {
     data: CompleteVideoUploadRequest,
     metadata: Metadata,
   ): Promise<VideoResponse> {
-    return this.videosService.completeVideoUpload(data, metadata);
+    return this.completeVideoUploadUseCase.execute(data, metadata);
   }
 
   @GrpcMethod(FILES_SERVICE_NAME, 'ListVideos')
@@ -55,11 +61,11 @@ export class FilesController {
     _data: ListVideosRequest,
     metadata: Metadata,
   ): Promise<ListVideosResponse> {
-    return this.videosService.listVideos(metadata);
+    return this.listVideosUseCase.execute(metadata);
   }
 
   @GrpcMethod(FILES_SERVICE_NAME, 'GetVideo')
   getVideo(data: GetVideoRequest, metadata: Metadata): Promise<VideoResponse> {
-    return this.videosService.getVideo(data, metadata);
+    return this.getVideoUseCase.execute(data, metadata);
   }
 }
