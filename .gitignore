@@ -45,6 +45,7 @@ apps/**/prisma/generated/
 # tests
 coverage
 .nyc_output
+tmp-vitest-*.json
 
 # caches and temp
 .cache

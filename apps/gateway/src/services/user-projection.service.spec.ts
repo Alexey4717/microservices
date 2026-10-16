@@ -66,4 +66,42 @@ describe('UserProjectionService', () => {
       },
     });
   });
+
+  it('findByIds не запрашивает пустой список', async () => {
+    const findMany = vi.fn();
+    const reader = new UserProjectionService({
+      userProjection: { findMany },
+    } as never);
+
+    await expect(reader.findByIds([])).resolves.toEqual([]);
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it('findByIds читает проекции пачкой и мапит как findById', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: 'u2',
+        email: 'b@example.com',
+        name: null,
+        avatarUrl: 'https://cdn.example/b.png',
+        accountTier: 'PREMIUM',
+      },
+    ]);
+    const reader = new UserProjectionService({
+      userProjection: { findMany },
+    } as never);
+
+    await expect(reader.findByIds(['u1', 'u2'])).resolves.toEqual([
+      {
+        id: 'u2',
+        email: 'b@example.com',
+        name: '',
+        avatarUrl: 'https://cdn.example/b.png',
+        accountTier: 'PREMIUM',
+      },
+    ]);
+    expect(findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['u1', 'u2'] } },
+    });
+  });
 });

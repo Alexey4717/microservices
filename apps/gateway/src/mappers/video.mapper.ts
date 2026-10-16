@@ -1,7 +1,18 @@
 import { emptyToNull } from '@libs/common';
 import type { UserResponse, VideoResponse } from '@libs/proto';
 
-import { Video, VideoAuthor } from '../models/video.model';
+import { VideoAuthor } from '../models/video.model';
+
+export type VideoParent = {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  ownerUserId: string;
+};
 
 export function toVideoAuthor(
   ownerUserId: string,
@@ -18,7 +29,7 @@ export function toVideoAuthor(
   };
 }
 
-export function toVideoModel(video: VideoResponse, author: VideoAuthor): Video {
+export function toVideoParent(video: VideoResponse): VideoParent {
   return {
     id: video.id,
     title: video.title,
@@ -27,6 +38,6 @@ export function toVideoModel(video: VideoResponse, author: VideoAuthor): Video {
     mimeType: video.mimeType,
     size: Number(video.size),
     createdAt: video.createdAt,
-    author,
+    ownerUserId: video.ownerUserId,
   };
 }

@@ -1,26 +1,38 @@
 import { UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Context,
+  ID,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 
 import { GraphQLError } from 'graphql';
-
-import type { UserResponse, VideoResponse } from '@libs/proto';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { CreateVideoUploadInput } from '../dto/create-video-upload.input';
 import { GqlAuthGuard } from '../guards/gql-auth.guard';
-import { toVideoAuthor, toVideoModel } from '../mappers/video.mapper';
+import { VideoAuthorLoader } from '../loaders/video-author.loader';
+import {
+  type VideoParent,
+  toVideoAuthor,
+  toVideoParent,
+} from '../mappers/video.mapper';
 import { VideoUpload } from '../models/video-upload.model';
-import { Video } from '../models/video.model';
+import { Video, VideoAuthor } from '../models/video.model';
 import { FilesGrpcService } from '../services/files-grpc.service';
-import { UserProjectionService } from '../services/user-projection.service';
 import type { AuthenticatedUser } from '../types/auth.types';
+import type { GqlContext } from '../types/gql-context';
 
-@Resolver()
+@Resolver(() => Video)
 export class VideosResolver {
   constructor(
     private readonly filesGrpc: FilesGrpcService,
-    private readonly userProjection: UserProjectionService,
+    private readonly videoAuthorLoader: VideoAuthorLoader,
     private readonly configService: ConfigService,
   ) {}
 
@@ -52,28 +64,28 @@ export class VideosResolver {
   async completeVideoUpload(
     @Args('id', { type: () => ID }) id: string,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<Video> {
+  ): Promise<VideoParent> {
     const result = await this.filesGrpc.completeVideoUpload(
       id,
       this.internalToken(),
       user.userId,
     );
-    return this.toVideo(result);
+    return toVideoParent(result);
   }
 
   @Query(() => [Video])
-  async videos(): Promise<Video[]> {
+  async videos(): Promise<VideoParent[]> {
     const result = await this.filesGrpc.listVideos(this.internalToken());
-    return this.toVideos(result.videos ?? []);
+    return (result.videos ?? []).map(toVideoParent);
   }
 
   @Query(() => Video, { nullable: true })
   async video(
     @Args('id', { type: () => ID }) id: string,
-  ): Promise<Video | null> {
+  ): Promise<VideoParent | null> {
     try {
       const result = await this.filesGrpc.getVideo(id, this.internalToken());
-      return await this.toVideo(result);
+      return toVideoParent(result);
     } catch (error) {
       if (isVideoNotFound(error)) {
         return null;
@@ -82,29 +94,15 @@ export class VideosResolver {
     }
   }
 
-  private async toVideo(video: VideoResponse): Promise<Video> {
-    const projection = await this.userProjection.findById(video.ownerUserId);
-    return toVideoModel(video, toVideoAuthor(video.ownerUserId, projection));
-  }
-
-  private async toVideos(videos: VideoResponse[]): Promise<Video[]> {
-    const ownerIds = [...new Set(videos.map((video) => video.ownerUserId))];
-    const entries = await Promise.all(
-      ownerIds.map(async (ownerUserId) => {
-        const projection = await this.userProjection.findById(ownerUserId);
-        return [ownerUserId, projection] as const;
-      }),
-    );
-    const projections = new Map<string, UserResponse | null>(entries);
-    return videos.map((video) =>
-      toVideoModel(
-        video,
-        toVideoAuthor(
-          video.ownerUserId,
-          projections.get(video.ownerUserId) ?? null,
-        ),
-      ),
-    );
+  @ResolveField(() => VideoAuthor)
+  async author(
+    @Parent() video: VideoParent,
+    @Context() context: GqlContext,
+  ): Promise<VideoAuthor> {
+    const projection = await this.videoAuthorLoader
+      .get(context)
+      .load(video.ownerUserId);
+    return toVideoAuthor(video.ownerUserId, projection);
   }
 
   private internalToken(): string {

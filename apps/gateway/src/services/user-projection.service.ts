@@ -52,6 +52,16 @@ export class UserProjectionService {
     return toUserResponse(record);
   }
 
+  async findByIds(ids: readonly string[]): Promise<UserResponse[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const records = await this.prisma.userProjection.findMany({
+      where: { id: { in: [...ids] } },
+    });
+    return records.map(toUserResponse);
+  }
+
   private async upsert(input: ProjectionWrite): Promise<void> {
     const name = emptyToNull(input.name);
     const avatarUrl = emptyToNull(input.avatarUrl);
