@@ -110,6 +110,7 @@
     "dotenv": "^16.6.1",
     "grammy": "^1.46.0",
     "graphql": "^16.14.2",
+    "graphql-query-complexity": "^2.0.0",
     "graphql-sse": "^2.6.1",
     "graphql-subscriptions": "^3.0.0",
     "graphql-upload-ts": "^2.2.0",

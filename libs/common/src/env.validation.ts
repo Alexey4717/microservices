@@ -146,6 +146,11 @@ export class GatewayEnvironmentVariables {
   @IsOptional()
   @IsString()
   TELEGRAM_MINI_APP_URL?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  GRAPHQL_MAX_COMPLEXITY?: number;
 }
 
 export function validateGatewayEnv(
@@ -167,7 +172,15 @@ export function validateGatewayEnv(
     );
   }
 
-  return config;
+  const graphqlMaxComplexity =
+    validated.GRAPHQL_MAX_COMPLEXITY === undefined
+      ? {}
+      : { GRAPHQL_MAX_COMPLEXITY: validated.GRAPHQL_MAX_COMPLEXITY };
+
+  return {
+    ...config,
+    ...graphqlMaxComplexity,
+  };
 }
 
 export class MailerEnvironmentVariables {

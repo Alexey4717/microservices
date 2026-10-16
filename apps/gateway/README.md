@@ -16,6 +16,8 @@ pnpm run start:gateway
 
 ## GraphQL
 
+Стоимость запроса ограничена переменной `GRAPHQL_MAX_COMPLEXITY` (если не задана — 100): каждое поле по умолчанию стоит 1. Запрос дороже лимита отклоняется с текстом `Query is too complex: N. Maximum allowed: M` и `extensions.code` = `GRAPHQL_COMPLEXITY_LIMIT`; gateway пишет warn с именем операции, стоимостью и лимитом. В development успешный ответ дополняется `extensions.complexity` и `extensions.maxComplexity`, в production этих полей нет. В development `IntrospectionQuery` не ограничивается лимитом, чтобы GraphiQL загружал схему; в production лимит для этого запроса действует как для остальных. Тот же лимит проверяется для подписок graphql-sse: при превышении ответ 400 JSON, поток не открывается.
+
 Мутации: `register`, `login`, `loginWithTelegram`, `refresh`, `logout`, `updateMe`, `uploadAvatar`.  
 Запрос: `me` — только с `Authorization: Bearer`, иначе 401. Если `users` временно недоступен, `me` отдаёт проекцию при уже записанном профиле.
 

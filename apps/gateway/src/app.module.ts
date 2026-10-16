@@ -19,6 +19,7 @@ import { PaymentsGrpcModule } from './grpc/payments-grpc.module';
 import { UsersGrpcModule } from './grpc/users-grpc.module';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { ComplexityPlugin } from './plugins/complexity.plugin';
 import { AiAssistantResolver } from './resolvers/ai-assistant.resolver';
 import { AuthResolver } from './resolvers/auth.resolver';
 import { PaymentsResolver } from './resolvers/payments.resolver';
@@ -85,6 +86,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       provide: APP_FILTER,
       useClass: RpcExceptionFilter,
     },
+    ComplexityPlugin,
     PrismaService,
     UserProjectionService,
     TelegramLinkedService,

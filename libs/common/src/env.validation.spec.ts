@@ -56,6 +56,30 @@ describe('validateGatewayEnv', () => {
       /AI_ASSISTANT_GRPC_URL/,
     );
   });
+
+  it('приводит GRAPHQL_MAX_COMPLEXITY из строки к числу', () => {
+    const result = validateGatewayEnv({
+      ...validGatewayEnv,
+      PORT: '3000',
+      EXTRA_FLAG: 'keep',
+      GRAPHQL_MAX_COMPLEXITY: '100',
+    });
+
+    expect(result.GRAPHQL_MAX_COMPLEXITY).toBe(100);
+    expect(result.PORT).toBe('3000');
+    expect(result.EXTRA_FLAG).toBe('keep');
+    expect(result.JWT_ACCESS_TTL).toBe(validGatewayEnv.JWT_ACCESS_TTL);
+  });
+
+  it('без GRAPHQL_MAX_COMPLEXITY оставляет конфиг без приведения типов', () => {
+    const config = {
+      ...validGatewayEnv,
+      PORT: '3000',
+      EXTRA_FLAG: 'keep',
+    };
+
+    expect(validateGatewayEnv(config)).toEqual(config);
+  });
 });
 
 const validAiAssistantEnv = {
