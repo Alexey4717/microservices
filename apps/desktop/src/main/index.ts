@@ -1,8 +1,45 @@
 /// <reference types="electron-vite/node" />
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 import { join } from 'node:path';
 
+import { resolveGraphqlUrl } from '../shared/graphql-url';
 import { registerSessionIpc } from './session-store';
+
+const PACKAGED_CORS_HEADERS = [
+  'Authorization',
+  'Content-Type',
+  'Apollo-Require-Preflight',
+  'Accept',
+].join(', ');
+
+function installPackagedGraphqlCors(): void {
+  if (process.env.ELECTRON_RENDERER_URL) {
+    return;
+  }
+
+  const graphqlUrl = resolveGraphqlUrl(import.meta.env.MAIN_VITE_GRAPHQL_URL);
+  let origin: string;
+  try {
+    origin = new URL(graphqlUrl).origin;
+  } catch (error) {
+    console.error(error);
+    return;
+  }
+
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: [`${origin}/*`] },
+    (details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Access-Control-Allow-Origin': ['*'],
+          'Access-Control-Allow-Headers': [PACKAGED_CORS_HEADERS],
+          'Access-Control-Allow-Methods': ['GET, POST, OPTIONS'],
+        },
+      });
+    },
+  );
+}
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -38,6 +75,7 @@ function createWindow(): void {
 
 void app.whenReady().then(() => {
   registerSessionIpc();
+  installPackagedGraphqlCors();
   createWindow();
 
   app.on('activate', () => {

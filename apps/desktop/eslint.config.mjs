@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 import { libsConsumersConfig } from '../../eslint/libs-consumers.mjs';
 
 export default tseslint.config(
-  { ignores: ['out', 'dist'] },
+  { ignores: ['out', 'dist', 'release'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['src/renderer/**/*.{ts,tsx}'],

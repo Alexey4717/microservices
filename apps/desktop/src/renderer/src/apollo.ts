@@ -1,7 +1,12 @@
 import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { SetContextLink } from '@apollo/client/link/context';
 
+import { resolveGraphqlUrl } from '../../shared/graphql-url';
 import { readAccessToken } from './auth-session';
+
+const graphqlUri = import.meta.env.DEV
+  ? '/graphql'
+  : resolveGraphqlUrl(import.meta.env.RENDERER_VITE_GRAPHQL_URL);
 
 export const apolloClient = new ApolloClient({
   cache: new InMemoryCache(),
@@ -19,7 +24,7 @@ export const apolloClient = new ApolloClient({
     };
   }).concat(
     new HttpLink({
-      uri: '/graphql',
+      uri: graphqlUri,
       credentials: 'omit',
     }),
   ),

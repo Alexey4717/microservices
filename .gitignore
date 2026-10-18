@@ -55,6 +55,7 @@ tmp-vitest-*.json
 .nest
 .next
 out
+release
 
 # IDE
 .idea

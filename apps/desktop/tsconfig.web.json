@@ -19,5 +19,9 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/renderer/src/**/*", "src/renderer/src/**/*.tsx"]
+  "include": [
+    "src/renderer/src/**/*",
+    "src/renderer/src/**/*.tsx",
+    "src/shared/**/*.ts"
+  ]
 }

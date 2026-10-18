@@ -1,0 +1,19 @@
+appId: pet.microservices.desktop
+productName: Кабинет
+electronVersion: 44.9.0
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+extraMetadata:
+  dependencies: {}
+npmRebuild: false
+beforePack: ./before-pack.cjs
+afterPack: ./before-pack.cjs
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createStartMenuShortcut: true
+  deleteAppDataOnUninstall: true
+  include: nsis/installer.nsh

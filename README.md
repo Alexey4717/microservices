@@ -77,7 +77,7 @@ pnpm run start:all
 
 Если при старте EADDRINUSE (порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 4002 / 8081 / 50051 / 50052 / 50053 / 50054 заняты) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` / `start:mobile` / `start:desktop` или процессы на этих портах вручную.
 
-По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram`, `pnpm run start:ai-assistant` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит). Мобильное приложение: `pnpm run start:mobile` (Expo на порту 8081, в `start:all` не входит). Десктоп: `pnpm run start:desktop` (Electron, Vite на порту 4002, в `start:all` не входит).
+По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram`, `pnpm run start:ai-assistant` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит). Мобильное приложение: `pnpm run start:mobile` (Expo на порту 8081, в `start:all` не входит). Десктоп: `pnpm run start:desktop` (Electron, Vite на порту 4002, в `start:all` не входит). В dev GraphQL идёт на относительный `/graphql` через прокси Vite. `pnpm run dist:desktop` собирает запускаемый каталог `apps/desktop/release/win-unpacked/` (`Кабинет.exe`, без установщика). `pnpm run dist:desktop:setup` собирает установщик `*Setup*.exe` в `apps/desktop/release/`. У упакованного приложения GraphQL по умолчанию `http://127.0.0.1:3000/graphql`; на другой машине нужен доступный gateway.
 
 Публичный HTTPS-туннель ngrok **не** стартует вместе со стеком. Скрипт поднимает **пакетный** `ngrok` из `node_modules`, а не системный агент: глобальный `ngrok config` ему не подходит, нужен `NGROK_AUTHTOKEN` в `.env` (см. `.env.example`). В отдельном терминале:
 
@@ -367,6 +367,8 @@ Expo-приложение открывает те же маршруты с `?cli
 - `pnpm run build:telegram-mini` — сборка Mini App
 - `pnpm run build:mobile` — сборка Expo (`expo export`)
 - `pnpm run build:desktop` — сборка Electron (только компиляция main, preload и renderer)
+- `pnpm run dist:desktop` — каталог `apps/desktop/release/win-unpacked/` с `Кабинет.exe`, без установщика. GraphQL по умолчанию `http://127.0.0.1:3000/graphql`; на другой машине нужен доступный gateway
+- `pnpm run dist:desktop:setup` — установщик `*Setup*.exe` в `apps/desktop/release/`
 - `pnpm codegen` — типы и документы `@libs/graphql` из `libs/graphql/schema.graphql`
 - `pnpm lint` / `pnpm run lint:fix` — ESLint бэкенда
 - `pnpm run lint:web` — ESLint `apps/web-client`

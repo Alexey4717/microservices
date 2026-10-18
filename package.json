@@ -28,6 +28,8 @@
     "build:telegram-mini": "pnpm --filter telegram-mini-app build",
     "build:mobile": "pnpm --filter mobile build",
     "build:desktop": "pnpm --filter desktop build",
+    "dist:desktop": "pnpm --filter desktop dist:dir",
+    "dist:desktop:setup": "pnpm --filter desktop dist:setup",
     "codegen": "pnpm --filter @libs/graphql run codegen",
     "copy:proto": "node scripts/copy-proto.mjs",
     "deploy": "nest deploy",

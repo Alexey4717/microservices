@@ -9,6 +9,7 @@ allowBuilds:
   bcrypt: true
   esbuild: true
   electron: true
+  electron-winstaller: true
   ngrok: true
   prisma: true
   protobufjs: true
