@@ -8,9 +8,11 @@ allowBuilds:
   '@prisma/engines': true
   bcrypt: true
   esbuild: true
+  electron: true
   ngrok: true
   prisma: true
   protobufjs: true
+  '@parcel/watcher': false
   sharp: false
   unrs-resolver: false
 

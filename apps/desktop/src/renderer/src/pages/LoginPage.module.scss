@@ -1,0 +1,26 @@
+@use '../styles/tokens' as *;
+@use '../styles/mixins' as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-stack;
+  width: 100%;
+  max-width: 400px;
+}
+
+.muted {
+  @include muted;
+}
+
+.field {
+  @include field;
+}
+
+.error {
+  @include error;
+}
+
+.primary {
+  @include primary;
+}

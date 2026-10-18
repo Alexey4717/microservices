@@ -2,7 +2,7 @@
   "$schema": "./node_modules/turbo/schema.json",
   "tasks": {
     "build": {
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "out/**"]
     },
     "//#build:services": {
       "cache": true,
@@ -12,6 +12,7 @@
         "!apps/web-client/**",
         "!apps/telegram-mini-app/**",
         "!apps/mobile/**",
+        "!apps/desktop/**",
         "libs/**",
         "!libs/graphql/**",
         "scripts/copy-proto.mjs",

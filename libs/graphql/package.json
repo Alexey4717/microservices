@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "sideEffects": false,
-  "consumers": ["web-client", "telegram-mini-app", "mobile"],
+  "consumers": ["web-client", "telegram-mini-app", "mobile", "desktop"],
   "exports": {
     "./operations/*": "./src/operations/*.ts",
     "./operations/*/*": "./src/operations/*/*.ts"

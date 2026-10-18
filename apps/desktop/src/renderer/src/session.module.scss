@@ -1,0 +1,10 @@
+@use './styles/tokens' as *;
+@use './styles/mixins' as *;
+
+.status {
+  @include status;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  padding: $space-page;
+}

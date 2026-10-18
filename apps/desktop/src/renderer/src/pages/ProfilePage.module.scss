@@ -1,0 +1,45 @@
+@use '../styles/tokens' as *;
+@use '../styles/mixins' as *;
+
+.muted {
+  @include muted;
+}
+
+.error {
+  @include error;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: $space-stack;
+}
+
+.avatar,
+.avatarFallback {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: $color-white;
+  flex-shrink: 0;
+}
+
+.avatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-title;
+  font-weight: $font-weight-semibold;
+  color: $color-muted;
+}
+
+.tier {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: $radius-pill;
+  background: $color-white;
+  font-size: $font-size-meta;
+  font-weight: $font-weight-semibold;
+}

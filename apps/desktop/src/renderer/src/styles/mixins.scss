@@ -1,0 +1,64 @@
+@use './tokens' as *;
+
+@mixin muted {
+  margin: 0;
+  color: $color-muted;
+  font-size: $font-size-body;
+}
+
+@mixin field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-field;
+  font-size: $font-size-body;
+
+  input {
+    border: 1px solid $color-border;
+    border-radius: $radius-control;
+    padding: 8px 12px;
+    background: $color-white;
+    color: inherit;
+
+    &:focus {
+      outline: 2px solid $color-text;
+      border-color: $color-text;
+    }
+  }
+}
+
+@mixin button {
+  border-radius: $radius-control;
+  padding: 10px 16px;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+}
+
+@mixin primary {
+  @include button;
+  margin-top: 4px;
+  border: 0;
+  background: $color-text;
+  color: $color-white;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+@mixin secondary {
+  @include button;
+  border: 1px solid $color-border;
+  background: $color-white;
+  color: $color-text;
+}
+
+@mixin error {
+  margin: 0;
+  color: $color-error;
+  font-size: $font-size-body;
+}
+
+@mixin status {
+  margin: 0;
+}

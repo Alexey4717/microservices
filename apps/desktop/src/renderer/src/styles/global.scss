@@ -1,0 +1,32 @@
+@use './tokens' as *;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: $font-sans;
+  background: $color-bg;
+  color: $color-text;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+h1 {
+  margin: 0;
+  font-size: $font-size-title;
+  font-weight: $font-weight-semibold;
+  letter-spacing: $title-tracking;
+}

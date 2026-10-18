@@ -1,0 +1,95 @@
+@use '../styles/tokens' as *;
+
+.bar {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  gap: 16px;
+  height: 52px;
+  padding: 0 $space-page;
+  border-bottom: 1px solid $color-border;
+  background: $color-white;
+}
+
+.leading {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  gap: 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  padding-right: 8px;
+  color: $color-text;
+  font-size: $font-size-name;
+  font-weight: $font-weight-semibold;
+  letter-spacing: $title-tracking;
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  color: $color-muted;
+  font-size: $font-size-body;
+  text-decoration: none;
+
+  &:hover {
+    color: $color-text;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-text;
+    outline-offset: -2px;
+  }
+}
+
+.linkActive {
+  color: $color-text;
+  font-weight: $font-weight-semibold;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    bottom: -1px;
+    left: 12px;
+    height: 2px;
+    background: $color-text;
+  }
+
+  &:hover {
+    color: $color-text;
+  }
+}
+
+.logout {
+  align-self: center;
+  margin-left: auto;
+  border: 0;
+  border-radius: $radius-control;
+  padding: 6px 10px;
+  background: transparent;
+  color: $color-muted;
+  font-size: $font-size-body;
+  cursor: pointer;
+
+  &:hover {
+    background: $color-bg;
+    color: $color-text;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-text;
+    outline-offset: 2px;
+  }
+}
