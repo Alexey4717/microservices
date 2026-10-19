@@ -7,6 +7,7 @@ import {
   GET_REFRESH_TOKEN_CHANNEL,
   SET_REFRESH_TOKEN_CHANNEL,
 } from '../shared/session-channels';
+import { assertTrustedIpc } from './ipc-guard';
 
 const TOKEN_FILE_NAME = 'refresh-token.bin';
 
@@ -72,12 +73,19 @@ export async function deleteStoredRefreshToken(): Promise<void> {
 }
 
 export function registerSessionIpc(): void {
-  ipcMain.handle(GET_REFRESH_TOKEN_CHANNEL, () => readStoredRefreshToken());
-  ipcMain.handle(SET_REFRESH_TOKEN_CHANNEL, (_event, token: unknown) => {
+  ipcMain.handle(GET_REFRESH_TOKEN_CHANNEL, (event) => {
+    assertTrustedIpc(event);
+    return readStoredRefreshToken();
+  });
+  ipcMain.handle(SET_REFRESH_TOKEN_CHANNEL, (event, token: unknown) => {
+    assertTrustedIpc(event);
     if (typeof token !== 'string' || token.length === 0) {
       throw new Error('Refresh token is empty');
     }
     return writeStoredRefreshToken(token);
   });
-  ipcMain.handle(CLEAR_REFRESH_TOKEN_CHANNEL, () => deleteStoredRefreshToken());
+  ipcMain.handle(CLEAR_REFRESH_TOKEN_CHANNEL, (event) => {
+    assertTrustedIpc(event);
+    return deleteStoredRefreshToken();
+  });
 }

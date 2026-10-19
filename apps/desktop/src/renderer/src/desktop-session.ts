@@ -1,3 +1,5 @@
+import type { DesktopSessionApi } from '../../shared/desktop-api';
+
 function sessionBridge(): DesktopSessionApi {
   const session = window.desktop?.session;
   if (!session) {

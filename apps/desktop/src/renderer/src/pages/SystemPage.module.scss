@@ -1,0 +1,72 @@
+@use '../styles/tokens' as *;
+@use '../styles/mixins' as *;
+
+.muted {
+  @include muted;
+}
+
+.error {
+  @include error;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: $space-stack;
+  margin: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: $font-size-name;
+  font-weight: $font-weight-semibold;
+  letter-spacing: $title-tracking;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.secondary {
+  @include secondary;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.toggle {
+  @include secondary;
+
+  &[aria-pressed='true'] {
+    border-color: $color-text;
+    background: $color-text;
+    color: $color-white;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.preview {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid $color-border;
+  border-radius: $radius-control;
+  background: $color-white;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: $font-size-meta;
+}
+
+.path {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: $font-size-meta;
+}

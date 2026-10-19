@@ -17,3 +17,7 @@ nsis:
   createStartMenuShortcut: true
   deleteAppDataOnUninstall: true
   include: nsis/installer.nsh
+protocols:
+  - name: Кабинет
+    schemes:
+      - cabinet

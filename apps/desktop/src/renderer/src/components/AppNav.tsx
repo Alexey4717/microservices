@@ -27,6 +27,9 @@ export function AppNav() {
           <NavLink to="/profile" className={linkClassName}>
             Профиль
           </NavLink>
+          <NavLink to="/system" className={linkClassName}>
+            Система
+          </NavLink>
         </nav>
       </div>
       <button

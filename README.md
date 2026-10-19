@@ -79,6 +79,8 @@ pnpm run start:all
 
 По отдельности: `pnpm run start:users`, `pnpm run start:mailer`, `pnpm run start:files`, `pnpm run start:payments`, `pnpm run start:telegram`, `pnpm run start:ai-assistant` и `pnpm run start:gateway`. Фронт: `pnpm run start:web` (Next.js на порту 4000, в `start:all` не входит). Telegram Mini App: `pnpm run start:telegram-mini` (Vite на порту 4001, в `start:all` не входит). Мобильное приложение: `pnpm run start:mobile` (Expo на порту 8081, в `start:all` не входит). Десктоп: `pnpm run start:desktop` (Electron, Vite на порту 4002, в `start:all` не входит). В dev GraphQL идёт на относительный `/graphql` через прокси Vite. `pnpm run dist:desktop` собирает запускаемый каталог `apps/desktop/release/win-unpacked/` (`Кабинет.exe`, без установщика). `pnpm run dist:desktop:setup` собирает установщик `*Setup*.exe` в `apps/desktop/release/`. У упакованного приложения GraphQL по умолчанию `http://127.0.0.1:3000/graphql`; на другой машине нужен доступный gateway.
 
+Десктоп открывает ссылки `cabinet://open/`, `cabinet://open/profile` и `cabinet://open/system` в уже запущенном окне (на Windows адрес приходит аргументом второму экземпляру). Канал автообновления — `MAIN_VITE_UPDATE_URL` в `apps/desktop/.env.example`. Пустое значение проверку не включает; в dev и без упаковки updater не вызывается. `dist:desktop` ничего не публикует.
+
 Публичный HTTPS-туннель ngrok **не** стартует вместе со стеком. Скрипт поднимает **пакетный** `ngrok` из `node_modules`, а не системный агент: глобальный `ngrok config` ему не подходит, нужен `NGROK_AUTHTOKEN` в `.env` (см. `.env.example`). В отдельном терминале:
 
 ```bash

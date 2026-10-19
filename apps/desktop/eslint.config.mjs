@@ -54,4 +54,14 @@ export default tseslint.config(
       ...libsConsumersConfig.rules,
     },
   },
+  {
+    files: ['src/**/*.spec.ts'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+      },
+    },
+  },
 );

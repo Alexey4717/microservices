@@ -1,9 +1,26 @@
 /// <reference types="electron-vite/node" />
-import { app, BrowserWindow, session } from 'electron';
-import { join } from 'node:path';
+import { app, session } from 'electron';
 
+import {
+  cabinetRouteFromArgv,
+  parseCabinetUrl,
+  type AppRoute,
+} from '../shared/cabinet-url';
 import { resolveGraphqlUrl } from '../shared/graphql-url';
+import { installPackagedContentSecurityPolicy } from './content-security';
+import { registerRenderProcessGone, startCrashReporter } from './crash';
+import { loadDesktopPreferences } from './preferences-store';
+import { registerProtocolClient } from './protocol';
 import { registerSessionIpc } from './session-store';
+import { registerSystemIpc } from './system-ipc';
+import { createAppTray, destroyAppTray } from './tray';
+import { markQuitting } from './lifecycle';
+import {
+  createMainWindow,
+  getMainWindow,
+  navigateMainWindow,
+  showMainWindow,
+} from './window';
 
 const PACKAGED_CORS_HEADERS = [
   'Authorization',
@@ -41,52 +58,86 @@ function installPackagedGraphqlCors(): void {
   );
 }
 
-function createWindow(): void {
-  const mainWindow = new BrowserWindow({
-    width: 960,
-    height: 640,
-    minWidth: 420,
-    minHeight: 520,
-    show: false,
-    title: 'Кабинет',
-    autoHideMenuBar: true,
-    backgroundColor: '#f4f4f5',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  startCrashReporter();
+  registerProtocolClient();
+  app.setAppUserModelId('pet.microservices.desktop');
+
+  let launchRoute: AppRoute | null = cabinetRouteFromArgv(process.argv);
+
+  const openRoute = (route: AppRoute | null): void => {
+    const win = getMainWindow();
+    if (!win) {
+      if (route) {
+        launchRoute = route;
+      }
+      return;
+    }
+    showMainWindow(win);
+    if (!route) {
+      return;
+    }
+    launchRoute = null;
+    navigateMainWindow(win, route);
+  };
+
+  app.on('second-instance', (_event, argv) => {
+    openRoute(cabinetRouteFromArgv(argv));
   });
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    openRoute(parseCabinetUrl(url));
   });
 
-  const rendererUrl = process.env.ELECTRON_RENDERER_URL;
-  const loaded = rendererUrl
-    ? mainWindow.loadURL(rendererUrl)
-    : mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  void app
+    .whenReady()
+    .then(async () => {
+      registerRenderProcessGone();
+      await loadDesktopPreferences();
+      registerSessionIpc();
+      registerSystemIpc();
+      installPackagedGraphqlCors();
+      installPackagedContentSecurityPolicy();
 
-  loaded.catch((error: unknown) => {
-    console.error(error);
+      const win = createMainWindow();
+      try {
+        createAppTray();
+      } catch (error) {
+        console.error(error);
+      }
+
+      const route = launchRoute;
+      launchRoute = null;
+      if (route) {
+        navigateMainWindow(win, route);
+      }
+
+      app.on('activate', () => {
+        const current = getMainWindow();
+        if (!current) {
+          createMainWindow();
+          return;
+        }
+        showMainWindow(current);
+      });
+    })
+    .catch((error: unknown) => {
+      console.error(error);
+    });
+
+  app.on('before-quit', () => {
+    markQuitting();
+    destroyAppTray();
   });
-}
 
-void app.whenReady().then(() => {
-  registerSessionIpc();
-  installPackagedGraphqlCors();
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
     }
   });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+}

@@ -5,6 +5,7 @@ import { AuthenticatedLayout } from './components/AuthenticatedLayout';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { SystemPage } from './pages/SystemPage';
 import { useSession } from './session-context';
 
 export function App() {
@@ -31,6 +32,14 @@ export function App() {
         element={
           <RequireSession>
             <ProfilePage />
+          </RequireSession>
+        }
+      />
+      <Route
+        path="/system"
+        element={
+          <RequireSession>
+            <SystemPage />
           </RequireSession>
         }
       />

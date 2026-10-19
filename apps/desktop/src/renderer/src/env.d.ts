@@ -1,19 +1,15 @@
 /// <reference types="vite/client" />
 
-interface ImportMetaEnv {
-  readonly RENDERER_VITE_GRAPHQL_URL?: string;
+import type { DesktopApi } from '../../shared/desktop-api';
+
+declare global {
+  interface ImportMetaEnv {
+    readonly RENDERER_VITE_GRAPHQL_URL?: string;
+  }
+
+  interface Window {
+    desktop?: DesktopApi;
+  }
 }
 
-interface DesktopSessionApi {
-  getRefreshToken(): Promise<string | null>;
-  setRefreshToken(token: string): Promise<void>;
-  clearRefreshToken(): Promise<void>;
-}
-
-interface DesktopApi {
-  session: DesktopSessionApi;
-}
-
-interface Window {
-  desktop?: DesktopApi;
-}
+export {};
