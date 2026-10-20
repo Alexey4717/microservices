@@ -40,6 +40,8 @@ Telegram Mini App (не Nest, не Next, не в `nest-cli.json`): пакет `a
 
 Десктоп (не Nest, не Next, не в `nest-cli.json`): пакет `apps/desktop` (имя `desktop`), electron-vite + React, порт **4002**. Запуск `pnpm run start:desktop`. В `start:all` не входит. В dev GraphQL — относительный `/graphql` (Vite проксирует на gateway `:3000`). Упакованная сборка ходит на абсолютный URL, по умолчанию `http://127.0.0.1:3000/graphql`; на другой машине нужен доступный gateway (`RENDERER_VITE_GRAPHQL_URL` и `MAIN_VITE_GRAPHQL_URL`, шаблон `apps/desktop/.env.example`). `pnpm run dist:desktop` — каталог `apps/desktop/release/win-unpacked/` с `Кабинет.exe`, без установщика. `pnpm run dist:desktop:setup` — установщик `*Setup*.exe` в `apps/desktop/release/`. Линт: `pnpm run lint:desktop`. Формат: `pnpm run format:desktop`. Из десктопа импорт `@libs/<name>` разрешён, только если `desktop` есть в `consumers` (сейчас `@libs/graphql`).
 
+Расширение Chrome (не Nest, не Next, не в `nest-cli.json`): пакет `apps/browser-extension` (имя `browser-extension`, не `@apps/*`), Manifest V3, TypeScript и esbuild. Порт не занимает. В `start:all` не входит. Сборка: `pnpm run build:extension`, результат в `apps/browser-extension/dist`. В Chrome: режим разработчика → «Загрузить распакованное расширение» → каталог `dist`. Умеет подпись «новое» на карточках каталога `/videos`, popup с путём вкладки кабинета, боковую панель с заметкой к ролику, пункт контекстного меню «Сохранить название», сочетание клавиш для панели, напоминание через минуту (`chrome.alarms` и уведомление), счётчик запросов браузера на `http://localhost:3000/graphql` с вкладки `http://localhost:4000` и ответ на сообщение со страницы кабинета. Линт: `pnpm run lint:extension`. Формат: `pnpm run format:extension`.
+
 Если порты 3000 / 3001 / 3002 / 3003 / 3004 / 3005 / 4000 / 4001 / 4002 / 8081 / 50051 / 50052 / 50053 / 50054 заняты (EADDRINUSE) — остановите предыдущий `start:all` / `start:web` / `start:telegram-mini` / `start:mobile` / `start:desktop` или процессы на этих портах вручную.
 
 ## Архитектура
@@ -62,7 +64,7 @@ pnpm lint
 pnpm run build:services
 ```
 
-Отдельный сервис по-прежнему собирается прежними командами: `pnpm run build:gateway`, `build:users`, `build:files`, `build:payments`, `build:ai-assistant` и остальные `build:<name>`. `pnpm run build` — Turbo: `build:services` плюс сборки `web-client`, `telegram-mini-app`, `mobile` и `desktop`.
+Отдельный сервис по-прежнему собирается прежними командами: `pnpm run build:gateway`, `build:users`, `build:files`, `build:payments`, `build:ai-assistant` и остальные `build:<name>`. `pnpm run build` — Turbo: `build:services` плюс сборки `web-client`, `telegram-mini-app`, `mobile`, `desktop` и `browser-extension`.
 
 Перед сдачей UI/HTTP — `pnpm run start:all`, затем GraphQL register → login → me.
 

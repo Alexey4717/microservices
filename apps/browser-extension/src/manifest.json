@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "Кабинет: учебное расширение",
+  "version": "0.1.0",
+  "description": "Подсказки на каталоге видео, заметки, напоминание и счётчик GraphQL для локального кабинета.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuuqJEKdkzT5AF+hIDfl37EttQ8vogiY0UJ7oI4cxEkhavjP8oUBlZhNoxyKFAiphmajNvOaOJBCt2vxEUYcjB97FORRVB1HvGdM9Z+jNW5mm8kji+h0YOl2QbGvZsr4W35ZRjFWrakoOXDsQd6vNbDwwu8LroAU+WNgLYohI1LxJ794VsIJ/d72NoPw6TH647upW6UF+dX+iekQrLl7tWWwnk4we1rwXSPkry2gIR3xAOVzsVNEQBNxh+P7ajVTGwsda1AXb5m5yXDMwcmw2ULWlUW0NT12zro6K1lCk2NsTQfcVsS7mx7066mGtcf1PvFzx4w8bQsNGr7IUnqP8/QIDAQAB",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "contextMenus",
+    "alarms",
+    "notifications",
+    "webRequest",
+    "tabs"
+  ],
+  "host_permissions": ["http://localhost:4000/*", "http://localhost:3000/*"],
+  "externally_connectable": {
+    "matches": ["http://localhost:4000/*"]
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": "icons/icon-128.png",
+    "default_title": "Кабинет"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "icons": {
+    "128": "icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:4000/videos",
+        "http://localhost:4000/videos/*"
+      ],
+      "js": ["content/catalog.js"],
+      "css": ["content/catalog.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:4000/videos",
+        "http://localhost:4000/videos/*"
+      ],
+      "js": ["content/catalog.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "commands": {
+    "open-side-panel": {
+      "suggested_key": {
+        "default": "Alt+Shift+K",
+        "mac": "Alt+Shift+K"
+      },
+      "description": "Открыть боковую панель"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { ExtensionPingButton } from './extension-ping-button';
+
 export default function HomePage() {
   return (
     <section className="flex flex-col gap-3">
@@ -6,6 +8,7 @@ export default function HomePage() {
         Добро пожаловать. Откройте профиль, чтобы увидеть данные текущего
         пользователя, или загляните в раздел видео.
       </p>
+      <ExtensionPingButton />
     </section>
   );
 }

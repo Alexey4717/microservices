@@ -13,6 +13,7 @@
         "!apps/telegram-mini-app/**",
         "!apps/mobile/**",
         "!apps/desktop/**",
+        "!apps/browser-extension/**",
         "libs/**",
         "!libs/graphql/**",
         "scripts/copy-proto.mjs",

@@ -1,0 +1,21 @@
+.ext-new-card {
+  position: relative;
+}
+
+.ext-new-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: inline-block;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #18181b;
+  color: #fafafa;
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  pointer-events: none;
+}

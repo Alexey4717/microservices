@@ -22,6 +22,7 @@ export default tseslint.config(
       'apps/telegram-mini-app/**',
       'apps/mobile/**',
       'apps/desktop/**',
+      'apps/browser-extension/**',
     ],
   },
   eslint.configs.recommended,
